@@ -9,6 +9,7 @@ import { SpeechTracker } from '../../core/tracker.js';
 import { fontById } from '../../core/settings-schema.js';
 import { describeDuration, SPEAKING_WPM } from '../../core/text.js';
 import { Animator } from '../../core/spring.js';
+import { cornerGrip } from '../../core/island-shape.js';
 import { icon } from '../shared/icons.js';
 
 const api = window.yalti;
@@ -104,6 +105,7 @@ function applySettings(s, changed = null) {
   body.classList.toggle('show-progress', s.showProgress);
 
   island.setLook({ style: s.bezelStyle, intensity: s.bezelIntensity, radius: s.cornerRadius });
+  if (has('cornerRadius')) shapeGrips(s.cornerRadius);
   view.setSmoothness(s.scrollSmoothness);
   if (has('readingLine')) view.setReadingLine(s.readingLine);
   if (has('mirror')) view.setMirror(s.mirror);
@@ -122,6 +124,20 @@ function applySettings(s, changed = null) {
   if (has('highlightSpoken', 'dimReadText', 'scrollMode') && !all) refreshMarks();
   renderControls();
   updateProgress();
+}
+
+/** Fit the corner resize grips to the island's corner radius. */
+function shapeGrips(radius) {
+  const { size, clip, grip } = cornerGrip({ r: radius });
+  for (const el of document.querySelectorAll('.resize-grip, .grip-mark')) {
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
+  }
+  for (const el of document.querySelectorAll('.resize-grip')) el.style.clipPath = `path('${clip}')`;
+  for (const el of document.querySelectorAll('.grip-mark')) {
+    el.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    el.querySelector('path').setAttribute('d', grip);
+  }
 }
 
 let relayoutQueued = false;
@@ -715,34 +731,44 @@ function setupPointer() {
   vp.addEventListener('pointercancel', endDrag);
   vp.addEventListener('dblclick', () => setVisibility('compact'));
 
-  // Resize from the corner handle.
-  const handle = $('#resize-handle');
+  // Resize from either bottom corner. The island stays centered, so the width
+  // changes by twice the horizontal drag.
   let rs = null;
-  handle.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    handle.setPointerCapture(e.pointerId);
-    island.capture(true);
-    rs = { sx: e.screenX, sy: e.screenY, w: island.size.w, h: island.size.h };
-    api.setResizing(true);
-  });
-  handle.addEventListener('pointermove', (e) => {
-    if (!rs) return;
-    const g = island.geo;
-    const w = Math.round(Math.max(360, Math.min(g.maxWidth || 2400, rs.w + 2 * (e.screenX - rs.sx))));
-    const h = Math.round(Math.max(120, Math.min(g.maxHeight || 1400, rs.h + (e.screenY - rs.sy))));
-    rs.nw = w; rs.nh = h;
-    island.setExpandedSize(w, h);
-  });
-  const endResize = async () => {
-    if (!rs) return;
-    const { nw, nh } = rs;
-    rs = null;
-    island.capture(false);
-    if (nw && nh) await api.updateSettings({ width: nw, height: nh });
-    api.setResizing(false);
-  };
-  handle.addEventListener('pointerup', endResize);
-  handle.addEventListener('pointercancel', endResize);
+  for (const grip of document.querySelectorAll('.resize-grip')) {
+    const sign = grip.dataset.corner === 'left' ? -1 : 1;
+    const mark = document.querySelector(`.grip-mark[data-corner="${grip.dataset.corner}"]`);
+    grip.addEventListener('pointerenter', () => mark.classList.add('hot'));
+    grip.addEventListener('pointerleave', () => { if (rs?.grip !== grip) mark.classList.remove('hot'); });
+    grip.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.stopPropagation();
+      grip.setPointerCapture(e.pointerId);
+      island.capture(true);
+      rs = { grip, sx: e.screenX, sy: e.screenY, w: island.size.w, h: island.size.h };
+      api.setResizing(true);
+    });
+    grip.addEventListener('pointermove', (e) => {
+      if (!rs || rs.grip !== grip) return;
+      const g = island.geo;
+      const w = Math.round(Math.max(360, Math.min(g.maxWidth || 2400, rs.w + 2 * sign * (e.screenX - rs.sx))));
+      const h = Math.round(Math.max(120, Math.min(g.maxHeight || 1400, rs.h + (e.screenY - rs.sy))));
+      if (w === rs.nw && h === rs.nh) return;
+      rs.nw = w; rs.nh = h;
+      island.setExpandedSize(w, h);
+      hint(`${w} × ${h}`, { ms: 900 });
+    });
+    const endResize = async () => {
+      if (!rs || rs.grip !== grip) return;
+      const { nw, nh } = rs;
+      rs = null;
+      if (!grip.matches(':hover')) mark.classList.remove('hot');
+      island.capture(false);
+      if (nw && nh) await api.updateSettings({ width: nw, height: nh });
+      api.setResizing(false);
+    };
+    grip.addEventListener('pointerup', endResize);
+    grip.addEventListener('pointercancel', endResize);
+  }
 
   // Drop a file anywhere on the island to open it.
   document.addEventListener('dragover', (e) => {

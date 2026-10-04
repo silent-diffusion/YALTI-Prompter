@@ -29,7 +29,7 @@ you move the mouse off the island or stop moving it.
 
 - **Move it:** drag the text sideways to slide the island along the top edge. It snaps back to
   the center when you get close.
-- **Resize it:** drag the small grip in the bottom-right corner.
+- **Resize it:** drag either bottom corner. A highlighted arc shows the grip when you hover the rim of the corner, and the new size is shown while you drag. The island stays centered, so it grows on both sides.
 - **Click through it:** the transparent space around the island never blocks the apps underneath.
 
 When the island is compact, short notifications (such as “Loaded …”) briefly widen it, just like a

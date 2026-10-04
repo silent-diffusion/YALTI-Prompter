@@ -84,7 +84,7 @@ Hover over the island to reveal the controls. Press **?** for every shortcut.
 | Settings | `Ctrl+,` | |
 
 Global shortcuts can be changed or turned off in *Settings → Shortcuts*. Drag the island
-sideways to move it along the top edge; drag its bottom-right corner to resize it.
+sideways to move it along the top edge; drag either bottom corner to resize it.
 
 The full guide is in [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 

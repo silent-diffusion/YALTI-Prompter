@@ -197,6 +197,7 @@ body.voice-searching #reading-marker { animation: marker-wait 1.6s ease-in-out i
   opacity: var(--bg-opacity);
   z-index: -1;
   border-radius: 0 0 28px 28px;
+  pointer-events: none; /* only the buttons take clicks; the corners stay grabbable */
 }
 
 body.controls-visible #controls {
@@ -274,22 +275,29 @@ body.controls-visible #progress-bar { opacity: 0; }
   transition: transform .5s var(--ease);
 }
 
-#resize-handle {
+/* Resize grips: an invisible band along the rim of each bottom corner (shaped
+   by cornerGrip() in core/island-shape.js) sits under the controls, so the
+   buttons always win where the two meet. The visible arc is drawn on top. */
+.resize-grip,
+.grip-mark {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
-  width: 22px;
-  height: 22px;
-  cursor: nwse-resize;
-  opacity: 0;
-  transition: opacity .2s ease;
-  pointer-events: auto;
-  background:
-    linear-gradient(135deg, transparent 52%, rgba(255,255,255,.4) 52%, rgba(255,255,255,.4) 58%, transparent 58%),
-    linear-gradient(135deg, transparent 70%, rgba(255,255,255,.4) 70%, rgba(255,255,255,.4) 76%, transparent 76%);
-  border-bottom-right-radius: 14px;
+  bottom: 0;
 }
-body.controls-visible #resize-handle { opacity: 0.8; }
+.resize-grip { z-index: 1; pointer-events: auto; cursor: nwse-resize; }
+.resize-grip[data-corner="left"] { cursor: nesw-resize; }
+[data-corner="right"].resize-grip, [data-corner="right"].grip-mark { right: 0; }
+[data-corner="left"].resize-grip, [data-corner="left"].grip-mark { left: 0; transform: scaleX(-1); }
+.grip-mark { z-index: 4; pointer-events: none; overflow: visible; }
+.grip-mark path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity .2s ease, stroke .2s ease;
+}
+body.controls-visible .grip-mark path { opacity: 0.6; }
+body .grip-mark.hot path { opacity: 1; stroke: var(--hl); }
 
 /* ---------- Hints, countdown, help, empty state ---------- */
 
@@ -368,6 +376,7 @@ body.controls-visible #hint { bottom: 62px; }
 #help {
   position: absolute;
   inset: 0;
+  z-index: 5;
   padding: 26px 34px 20px;
   background: color-mix(in srgb, var(--bg) 94%, transparent);
   color: #fff;

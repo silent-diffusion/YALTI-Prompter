@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { islandPath, hitIsland } from '../../src/core/island-shape.js';
+import { islandPath, hitIsland, cornerGrip } from '../../src/core/island-shape.js';
 import { Spring } from '../../src/core/spring.js';
 import { applyPatch, sanitize, DEFAULTS, cleanValue } from '../../src/core/settings-schema.js';
 
@@ -29,6 +29,19 @@ test('bulges add curves without NaN', () => {
   const d = islandPath({ cx: 400, w: 600, h: 200, r: 28, s: 16, bulgeX: 4, bulgeY: -6 });
   assert.ok(!/NaN/.test(d));
   assert.ok((d.match(/C/g) || []).length >= 7);
+});
+
+test('corner resize grip follows the rounded corner and stays clear of the controls', () => {
+  const { size, clip, grip } = cornerGrip({ r: 30, extent: 28, thickness: 12 });
+  assert.equal(size, 58);
+  // Outer edge hugs the island corner (radius 30), inner edge is 12 px in (radius 18).
+  assert.ok(clip.includes('A30,30 0 0 1 28,58'), clip);
+  assert.ok(clip.includes('A18,18 0 0 0 46,28'), clip);
+  assert.ok(grip.startsWith('M52,20') && grip.includes('A24,24'), grip);
+  for (const r of [0, 4, 8, 12, 48]) {
+    const g = cornerGrip({ r });
+    assert.ok(!/NaN|-/.test(g.clip + g.grip), `r=${r}: ${g.clip} ${g.grip}`);
+  }
 });
 
 test('tiny heights stay valid (pill emerging from the edge)', () => {
