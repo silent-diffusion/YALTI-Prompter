@@ -4,7 +4,7 @@
 
 'use strict';
 
-const { SpeechEngine } = require('./engine.cjs');
+const { SpeechEngine, warmModel } = require('./engine.cjs');
 
 /** @type {SpeechEngine|null} */
 let engine = null;
@@ -50,18 +50,32 @@ function attach(newPort) {
   else if (initError) send({ type: 'error', message: initError });
 }
 
+/** Load the model, telling the app how far along it is (see SpeechHost). */
+async function init({ modelDir, numThreads }) {
+  try {
+    let reported = 0;
+    await warmModel(modelDir, (loaded, total) => {
+      const fraction = total ? loaded / total : 1;
+      if (fraction - reported >= 0.02 || loaded === total) {
+        reported = fraction;
+        toParent({ type: 'progress', phase: 'read', fraction });
+      }
+    });
+    toParent({ type: 'progress', phase: 'init' });
+    engine = new SpeechEngine(modelDir, { numThreads });
+    toParent({ type: 'ready', model: engine.manifest.name, loadMs: engine.loadMs });
+    send({ type: 'ready', model: engine.manifest.name, loadMs: engine.loadMs });
+  } catch (err) {
+    initError = `Could not load the speech model: ${err.message}`;
+    toParent({ type: 'error', message: initError });
+    send({ type: 'error', message: initError });
+  }
+}
+
 process.parentPort.on('message', (e) => {
   const msg = e.data || {};
   if (msg.type === 'init') {
-    try {
-      engine = new SpeechEngine(msg.modelDir, { numThreads: msg.numThreads });
-      toParent({ type: 'ready', model: engine.manifest.name, loadMs: engine.loadMs });
-      send({ type: 'ready', model: engine.manifest.name, loadMs: engine.loadMs });
-    } catch (err) {
-      initError = `Could not load the speech model: ${err.message}`;
-      toParent({ type: 'error', message: initError });
-      send({ type: 'error', message: initError });
-    }
+    init(msg);
   } else if (msg.type === 'attach' && e.ports && e.ports[0]) {
     attach(e.ports[0]);
   } else if (msg.type === 'shutdown') {

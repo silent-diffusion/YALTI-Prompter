@@ -88,6 +88,8 @@ export class StateStore extends JsonFile {
       positions: stored.positions && typeof stored.positions === 'object' ? stored.positions : {},
       // How the in-app (scratch) script is parsed when it is reopened.
       scratchFormat: SCRATCH_FORMATS.includes(stored.scratchFormat) ? stored.scratchFormat : 'markdown',
+      // How long the speech recognizer last took to initialize, for the loading indicator.
+      speechInitMs: Number.isFinite(stored.speechInitMs) ? stored.speechInitMs : null,
     };
   }
 
@@ -113,6 +115,11 @@ export class StateStore extends JsonFile {
   setLastScript(path, scratchFormat) {
     this.state.lastScript = path;
     if (path === 'scratch' && SCRATCH_FORMATS.includes(scratchFormat)) this.state.scratchFormat = scratchFormat;
+    this.scheduleSave();
+  }
+
+  setSpeechInitMs(ms) {
+    this.state.speechInitMs = Math.round(Math.min(60000, Math.max(100, ms)));
     this.scheduleSave();
   }
 

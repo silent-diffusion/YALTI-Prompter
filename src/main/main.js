@@ -486,7 +486,9 @@ app.whenReady().then(async () => {
   stateStore = new StateStore(paths.stateFile());
   scripts = new ScriptManager(stateStore);
   scripts.setWatchEnabled(settings.get().watchScriptFile);
-  speech = new SpeechHost(() => settings.get());
+  speech = new SpeechHost(() => settings.get(), {
+    initMs: { get: () => stateStore.state.speechInitMs, set: (ms) => stateStore.setSpeechInitMs(ms) },
+  });
   prompter = new PrompterWindow(settings);
   panels = new Panels();
   tray = new AppTray({ getState: appState, command });

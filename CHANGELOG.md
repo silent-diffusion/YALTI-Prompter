@@ -4,6 +4,23 @@ All notable changes to YALTI Prompter are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.1.1] — 2026-10-04
+
+### Added
+
+- A **Loading speech model** indicator with a progress ring beside the microphone indicator while
+  the speech model loads.
+
+### Changed
+
+- On light island colors (such as the *Paper* theme) the controls, labels, status dots, help and
+  indicators switch to dark, high-contrast colors.
+
+### Fixed
+
+- Voice tracking heard nothing when started again more than three minutes after it was last
+  stopped: the speech engine had been unloaded, but the prompter kept talking to the old one.
+
 ## [1.1.0] — 2026-10-04
 
 **Updating from 1.0.0:** version 1.0.0 can’t update itself, so install 1.1.0 once with the Setup
@@ -62,5 +79,6 @@ First public release.
 - Windows installer (per-user, with uninstaller), portable `.exe` and portable `.zip`.
 - Documentation, third-party license notices and automated unit, speech and app tests.
 
+[1.1.1]: https://github.com/silent-diffusion/YALTI-Prompter/releases/tag/v1.1.1
 [1.1.0]: https://github.com/silent-diffusion/YALTI-Prompter/releases/tag/v1.1.0
 [1.0.0]: https://github.com/silent-diffusion/YALTI-Prompter/releases/tag/v1.0.0

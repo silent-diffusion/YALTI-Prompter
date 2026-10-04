@@ -41,6 +41,10 @@
 
         <button id="jump-back" type="button"><span class="jb-icon"></span><span class="jb-text"></span><kbd>⌫</kbd></button>
         <button id="mic-meter" type="button" title="Listening — click to stop" aria-label="Microphone is on. Click to stop listening." hidden></button>
+        <div id="voice-loading" role="progressbar" aria-label="Loading the speech model" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle class="track" cx="10" cy="10" r="7.5"/><circle class="value" cx="10" cy="10" r="7.5"/></svg>
+          <span class="vl-text">Loading speech model</span><span class="vl-pct">0%</span>
+        </div>
 
         <div id="hint" aria-live="polite"></div>
         <div id="countdown" aria-live="assertive"></div>

@@ -29,8 +29,11 @@ runner.
 - **Prompter window** is a frameless, transparent, always-on-top window anchored to the top edge of
   a display. It draws the island, renders the script, runs the tracker and captures the microphone.
 - **Speech process** is an Electron *utility process*. It loads the native sherpa-onnx addon and the
-  model only when voice tracking is first used. A crash there cannot take down the interface; the
-  prompter reconnects automatically.
+  model only when voice tracking is first used, and is unloaded after three idle minutes; every
+  start of voice tracking asks for a fresh port, which starts it again if needed. While loading it
+  reports progress: reading the model files is measured (`warmModel()`), and the recognizer's
+  own blocking load is estimated from how long it took last time. A crash there cannot take down
+  the interface; the prompter reconnects automatically.
 
 All pages run with `contextIsolation`, `sandbox` and no Node.js integration. Preload scripts expose
 small, fixed APIs, and the main process only accepts IPC from `app://yalti` pages. Navigation and

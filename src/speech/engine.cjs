@@ -41,6 +41,34 @@ function readModel(modelDir) {
   return { manifest, files };
 }
 
+/**
+ * Read a model's files once, so the operating system has them cached before the
+ * recognizer loads them. On a cold start this disk read is most of the loading
+ * time, and unlike the recognizer's own (blocking) load, its progress can be
+ * measured: onProgress(loaded, total) is called after every chunk.
+ */
+async function warmModel(modelDir, onProgress = () => {}) {
+  const { files } = readModel(modelDir);
+  const list = Object.values(files);
+  const total = list.reduce((sum, f) => sum + fs.statSync(f).size, 0);
+  const buf = Buffer.allocUnsafe(4 * 1024 * 1024);
+  let loaded = 0;
+  for (const file of list) {
+    const fh = await fs.promises.open(file, 'r');
+    try {
+      for (;;) {
+        const { bytesRead } = await fh.read(buf, 0, buf.length, null);
+        if (!bytesRead) break;
+        loaded += bytesRead;
+        onProgress(loaded, total);
+      }
+    } finally {
+      await fh.close();
+    }
+  }
+  return total;
+}
+
 /** List model folders (each containing a model.json) under the given roots. */
 function listModels(roots) {
   const out = [];
@@ -138,4 +166,4 @@ class SpeechEngine {
   }
 }
 
-module.exports = { SpeechEngine, readModel, listModels, longPathSafe, SAMPLE_RATE };
+module.exports = { SpeechEngine, readModel, warmModel, listModels, longPathSafe, SAMPLE_RATE };
