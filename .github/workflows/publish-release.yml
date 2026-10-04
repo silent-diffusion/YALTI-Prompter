@@ -1,0 +1,63 @@
+name: Publish release
+
+# Publishes a draft made by the Release workflow, so it becomes the latest
+# release: the one people download and the in-app updater finds. The notes are
+# that version's section of CHANGELOG.md. Run it from the Actions tab (or the
+# API) with the version, e.g. 1.2.3, after checking the draft.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish, e.g. 1.2.3 (its draft release must exist)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check the version and the draft
+        # The updater needs the installer, portable app, zip and SHA256SUMS.txt.
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$VERSION' is not a version like 1.2.3."
+            exit 1
+          fi
+          gh release view "v$VERSION" --json isDraft,assets > release.json
+          node -e '
+            const r = require("./release.json");
+            const v = process.env.VERSION;
+            const need = [`YALTI-Prompter-Setup-${v}.exe`, `YALTI-Prompter-Portable-${v}.exe`, `YALTI-Prompter-${v}-win-x64.zip`, "SHA256SUMS.txt"];
+            const have = r.assets.map((a) => a.name);
+            const missing = need.filter((n) => !have.includes(n));
+            if (missing.length) { console.log(`::error::v${v} is missing ${missing.join(", ")}.`); process.exit(1); }
+            if (!r.isDraft) console.log(`v${v} is already published; updating its title and notes.`);
+            console.log(`Files: ${have.join(", ")}`);
+          '
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v head="## [$VERSION]" '
+            index($0, head) == 1 { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::CHANGELOG.md has no section for $VERSION."
+            exit 1
+          fi
+          cat notes.md
+
+      - name: Publish
+        run: |
+          gh release edit "v$VERSION" --draft=false --latest --title "YALTI Prompter $VERSION" --notes-file notes.md
+          gh release view "v$VERSION" --json url,isDraft,publishedAt
