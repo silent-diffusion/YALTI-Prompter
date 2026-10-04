@@ -28,8 +28,12 @@ model with `npm run fetch-model`.
    git tag v1.1.0
    git push origin main --tags
    ```
+   Or, once the commit is on `main`, open **Actions → Release → Run workflow** on `main`: the
+   workflow tags the commit `v<version>` itself before building. (It refuses to run on other
+   branches, or when that tag already exists on a different commit.)
 5. The **Release** workflow builds the installer, the portable `.exe` and the `.zip` on Windows,
-   attaches them and their SHA-256 checksums to a draft release named after the tag.
+   attaches them and their SHA-256 checksums to a draft release named after the tag. The in-app
+   updater relies on those checksums (`SHA256SUMS.txt`) and refuses releases without them.
 6. Review the draft on GitHub, paste the changelog section into the notes, and publish it.
 
 ## Building a release by hand

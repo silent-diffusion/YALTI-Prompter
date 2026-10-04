@@ -1,7 +1,9 @@
 name: Release
 
 # Push a tag like v1.2.3 (matching package.json) to build Windows installers
-# and attach them to a draft GitHub release for review.
+# and attach them to a draft GitHub release for review — or run this workflow
+# on main from the Actions tab, which tags the commit v<package.json version>
+# itself first.
 on:
   push:
     tags: ['v*']
@@ -44,6 +46,31 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Tag this commit (when started from the Actions tab)
+        # The tag must exist before the draft is published: if publishing created
+        # it, that tag would start this workflow again and replace the checksums.
+        # Tags pushed with GITHUB_TOKEN don't start workflows, so this one doesn't.
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Start releases from main (this run is on $GITHUB_REF)."
+            exit 1
+          fi
+          tag="v$(node -p "require('./package.json').version")"
+          git fetch --quiet --tags origin
+          existing=$(git rev-list -n 1 "$tag" 2>/dev/null || true)
+          if [ "$existing" = "$GITHUB_SHA" ]; then
+            echo "$tag already points at this commit."
+          elif [ -n "$existing" ]; then
+            echo "::error::$tag already exists on another commit. Bump the version in package.json first."
+            exit 1
+          else
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              tag -a "$tag" -m "YALTI Prompter ${tag#v}"
+            git push origin "$tag"
+          fi
+
       - name: Build installer, portable app and zip; publish draft release
         # The release goes to the repository this workflow runs in. Bash, because
         # PowerShell splits "-c.publish.repo=…" arguments at the dot.
@@ -63,8 +90,9 @@ jobs:
           Get-Content dist/SHA256SUMS.txt
 
       - name: Attach checksums to the release
-        if: startsWith(github.ref, 'refs/tags/')
-        run: gh release upload "${{ github.ref_name }}" dist/SHA256SUMS.txt --clobber
+        # The release's tag is v<package.json version> (checked or created above).
+        shell: bash
+        run: gh release upload "v$(node -p "require('./package.json').version")" dist/SHA256SUMS.txt --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
