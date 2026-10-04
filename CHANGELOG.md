@@ -6,6 +6,10 @@ All notable changes to YALTI Prompter are documented here. The format follows
 
 ## [1.1.0] — 2026-10-04
 
+**Updating from 1.0.0:** version 1.0.0 can’t update itself, so install 1.1.0 once with the Setup
+file (it updates the installed copy and keeps your settings). From then on, YALTI updates from
+inside the app.
+
 ### Added
 
 - **Updates from GitHub.** *Settings → Updates* (and *Check for updates…* in the tray) checks for a

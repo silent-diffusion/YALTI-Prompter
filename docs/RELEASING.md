@@ -34,7 +34,11 @@ model with `npm run fetch-model`.
 5. The **Release** workflow builds the installer, the portable `.exe` and the `.zip` on Windows,
    attaches them and their SHA-256 checksums to a draft release named after the tag. The in-app
    updater relies on those checksums (`SHA256SUMS.txt`) and refuses releases without them.
-6. Review the draft on GitHub, paste the changelog section into the notes, and publish it.
+6. Review the draft on GitHub, then publish it: either edit it there (paste the changelog section
+   into the notes), or run **Actions → Publish release** with the version (for example `1.1.0`).
+   That workflow checks that the draft has the installer, the portable `.exe`, the `.zip` and
+   `SHA256SUMS.txt`, takes the notes from that version's section of `CHANGELOG.md` and publishes
+   it as the latest release — the one the in-app updater finds.
 
 ## Building a release by hand
 
