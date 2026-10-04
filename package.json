@@ -146,6 +146,7 @@
       "shortcutName": "YALTI Prompter",
       "uninstallDisplayName": "YALTI Prompter",
       "license": "LICENSE",
+      "include": "build/installer.nsh",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false,
       "installerIcon": "build/icon.ico",

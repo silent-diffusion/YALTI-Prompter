@@ -46,3 +46,6 @@ jobs:
 
       - name: Package (unpacked)
         run: npm run pack
+
+      - name: Build the installer (compiles build/installer.nsh)
+        run: npx electron-builder --win nsis --prepackaged dist/win-unpacked --publish never
