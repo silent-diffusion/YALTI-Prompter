@@ -78,7 +78,7 @@ Hover over the island to reveal the controls. Press **?** for every shortcut.
 | Expand / collapse | `Enter` / `Esc` | `Ctrl+Alt+Enter` |
 | Scroll a line / a page | `↑` `↓` / `PgUp` `PgDn` | `Ctrl+Alt+PgUp` / `Ctrl+Alt+PgDn` |
 | Slower / faster auto-scroll | `[` / `]` | `Ctrl+Alt+-` / `Ctrl+Alt+=` |
-| Back to the start | `Home` | `Ctrl+Alt+Home` |
+| Back to the start / end | `Home` / `End` | `Ctrl+Alt+Home` |
 | Text size | `Ctrl` `+` / `Ctrl` `−` | |
 | Open · Paste · Edit · Reload script | `Ctrl+O` · `Ctrl+V` · `Ctrl+E` · `Ctrl+R` | |
 | Settings | `Ctrl+,` | |

@@ -2,7 +2,7 @@
 // Save writes the file. Pasted or new scripts live inside YALTI until saved.
 
 import { icon } from '../shared/icons.js';
-import { countWords, SPEAKING_WPM } from '../../core/text.js';
+import { countWords, describeDuration, SPEAKING_WPM } from '../../core/text.js';
 
 const api = window.yalti;
 const $ = (id) => document.getElementById(id);
@@ -20,8 +20,7 @@ function setButton(id, iconName, label) {
 
 function stats() {
   const words = countWords(text.value);
-  const min = words / SPEAKING_WPM;
-  $('stats').textContent = `${words.toLocaleString()} words · about ${min < 1 ? 'under a minute' : `${Math.round(min)} min`} to read aloud`;
+  $('stats').textContent = `${words.toLocaleString()} words · ${describeDuration(words / SPEAKING_WPM)} to read aloud`;
 }
 
 function dirty() {

@@ -7,7 +7,7 @@ import { VoiceInput } from './voice.js';
 import { buildModel } from '../../core/document.js';
 import { SpeechTracker } from '../../core/tracker.js';
 import { fontById } from '../../core/settings-schema.js';
-import { SPEAKING_WPM } from '../../core/text.js';
+import { describeDuration, SPEAKING_WPM } from '../../core/text.js';
 import { Animator } from '../../core/spring.js';
 import { icon } from '../shared/icons.js';
 
@@ -469,7 +469,11 @@ function command(name, arg) {
     case 'toggleVoice': toggleVoiceMode(); break;
     case 'setMode':
       if (arg === 'auto') { if (voice.running) stopVoice(); api.updateSettings({ scrollMode: 'auto' }); }
-      else if (arg === 'voice' && !voice.running) startVoice();
+      else if (arg === 'voice' && app.settings.scrollMode !== 'voice') {
+        // Choosing the mode doesn't open the microphone; Space starts listening.
+        api.updateSettings({ scrollMode: 'voice' });
+        hint('Voice tracking selected — press Space to start listening', { ms: 2400 });
+      }
       break;
     case 'lineBack': manualMove(() => view.nudgeLines(-1)); break;
     case 'lineForward': manualMove(() => view.nudgeLines(1)); break;
@@ -529,8 +533,7 @@ function updateProgress() {
   } else {
     minutes = Math.max(0, n - word) / SPEAKING_WPM;
   }
-  const left = minutes < 1 ? 'under a minute left' : `about ${Math.round(minutes)} min left`;
-  $('#progress-text').textContent = `${Math.round(p * 100)}% · ${left}`;
+  $('#progress-text').textContent = `${Math.round(p * 100)}% · ${describeDuration(minutes)} left`;
 }
 
 function updateCompactLabel() {
@@ -592,7 +595,7 @@ function reportState() {
 function buildHelp() {
   const rows = [
     ['Start / pause', 'Space'], ['Voice tracking on / off', 'M'], ['Scroll a line', '↑ ↓'], ['Scroll a page', 'PgUp PgDn'],
-    ['Back to the start', 'Home'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open script', 'Ctrl+O'],
+    ['Back to the start / end', 'Home End'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open script', 'Ctrl+O'],
     ['Paste script', 'Ctrl+V'], ['Edit script', 'Ctrl+E'], ['Reload script', 'Ctrl+R'], ['Settings', 'Ctrl+,'],
     ['Collapse', 'Esc'], ['Hide', 'H'], ['This help', '?'],
   ];

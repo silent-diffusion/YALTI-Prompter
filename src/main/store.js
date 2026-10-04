@@ -85,7 +85,6 @@ export class StateStore extends JsonFile {
       recent: Array.isArray(stored.recent) ? stored.recent.filter((p) => typeof p === 'string').slice(0, MAX_RECENT) : [],
       lastScript: typeof stored.lastScript === 'string' ? stored.lastScript : null,
       positions: stored.positions && typeof stored.positions === 'object' ? stored.positions : {},
-      seenWelcome: !!stored.seenWelcome,
     };
   }
 
@@ -126,11 +125,6 @@ export class StateStore extends JsonFile {
       keys.sort((a, b) => this.state.positions[a].at - this.state.positions[b].at);
       for (const k of keys.slice(0, keys.length - MAX_POSITIONS)) delete this.state.positions[k];
     }
-    this.scheduleSave();
-  }
-
-  set(key, value) {
-    this.state[key] = value;
     this.scheduleSave();
   }
 }

@@ -163,6 +163,16 @@ export function wordSimilarity(spoken, script, spokenKey, scriptKey) {
 /** Natural speaking rate used for time estimates (words per minute). */
 export const SPEAKING_WPM = 140;
 
+/** A friendly duration for time estimates: "under a minute", "about 4 min", "about 1 h 15 min". */
+export function describeDuration(minutes) {
+  if (!(minutes >= 1)) return 'under a minute';
+  const total = Math.round(minutes);
+  if (total < 60) return `about ${total} min`;
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `about ${h} h${m ? ` ${m} min` : ''}`;
+}
+
 export function countWords(text) {
   if (!text) return 0;
   const m = text.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu);

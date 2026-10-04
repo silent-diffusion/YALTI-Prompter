@@ -2,6 +2,7 @@
 // the prompter updates live while you adjust it.
 
 import { FIELDS, FONTS, fontById } from '../../core/settings-schema.js';
+import { describeDuration, SPEAKING_WPM } from '../../core/text.js';
 import { icon } from '../shared/icons.js';
 
 const api = window.yalti;
@@ -158,7 +159,7 @@ async function renderScript() {
   const paintInfo = (script) => {
     info.replaceChildren(
       h('strong', {}, script ? script.title : 'No script loaded'),
-      h('span', {}, script ? `${script.fileName || (script.kind === 'sample' ? 'Built-in welcome script' : 'Pasted / written in YALTI')} · ${script.wordCount.toLocaleString()} words · about ${Math.max(1, Math.round(script.wordCount / 140))} min` : 'Open a .txt or .md file to begin.'));
+      h('span', {}, script ? `${script.fileName || (script.kind === 'sample' ? 'Built-in welcome script' : 'Pasted / written in YALTI')} · ${script.wordCount.toLocaleString()} words · ${describeDuration(script.wordCount / SPEAKING_WPM)} to read aloud` : 'Open a .txt or .md file to begin.'));
   };
   paintInfo(await api.currentScript());
   const unsub = api.on('script:loaded', paintInfo);
@@ -383,7 +384,7 @@ function renderShortcuts() {
     });
     return row(a.label, null, h('span', { class: 'control' }, dot, btn));
   });
-  const local = [['Start / pause', 'Space'], ['Voice tracking on / off', 'M'], ['Scroll a line / a page', '↑ ↓ · PgUp PgDn'], ['Back to the start', 'Home'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open · Paste · Edit · Reload', 'Ctrl+O · Ctrl+V · Ctrl+E · Ctrl+R'], ['Settings', 'Ctrl+,'], ['Collapse · Hide', 'Esc · H'], ['All shortcuts', '?']];
+  const local = [['Start / pause', 'Space'], ['Voice tracking on / off', 'M'], ['Scroll a line / a page', '↑ ↓ · PgUp PgDn'], ['Back to the start / end', 'Home · End'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open · Paste · Edit · Reload', 'Ctrl+O · Ctrl+V · Ctrl+E · Ctrl+R'], ['Settings', 'Ctrl+,'], ['Collapse · Hide', 'Esc · H'], ['All shortcuts', '?']];
   return [
     h('h1', {}, 'Shortcuts'),
     h('p', { class: 'lede' }, 'Global shortcuts work even while another app — your slides or a video call — has focus. Click a shortcut to record a new one; press Backspace to clear it.'),
