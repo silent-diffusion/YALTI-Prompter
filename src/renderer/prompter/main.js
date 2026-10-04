@@ -12,6 +12,7 @@ import { describeDuration, SPEAKING_WPM } from '../../core/text.js';
 import { Animator } from '../../core/spring.js';
 import { cornerGrip } from '../../core/island-shape.js';
 import { jumpSnippet, shouldOfferJumpBack } from '../../core/jump-back.js';
+import { inkFor } from '../../core/contrast.js';
 import { icon } from '../shared/icons.js';
 import { dropKind, openDropped } from '../shared/drop.js';
 
@@ -114,6 +115,8 @@ function applySettings(s, changed = null) {
   body.classList.toggle('marker', s.showReadingMarker);
   body.classList.toggle('show-progress', s.showProgress);
   body.classList.toggle('style-floating', s.bezelStyle === 'floating');
+  // Dark controls on a light island, light ones on a dark island.
+  body.classList.toggle('light-surface', inkFor(s.backgroundColor) === 'dark');
 
   island.setLook({ style: s.bezelStyle, intensity: s.bezelIntensity, radius: s.cornerRadius });
   if (has('cornerRadius')) shapeGrips(s.cornerRadius);

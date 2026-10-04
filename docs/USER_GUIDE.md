@@ -97,6 +97,11 @@ while it waits for words from the script. Click it to stop listening. (Turn it o
 *Settings → Voice → Microphone indicator*. With reduced motion turned on in Windows it shows a
 still microphone whose glow follows your voice.)
 
+The speech model loads when you first start listening, and again if voice tracking has been off
+for a few minutes (it is unloaded to free memory). While it loads, a small **Loading speech
+model** indicator with a progress ring appears beside the microphone indicator; YALTI starts
+following you as soon as it reaches 100 %.
+
 YALTI is built for real speaking, not perfect reading:
 
 - **Pauses** — nothing moves while you are quiet.
@@ -146,7 +151,8 @@ are saved automatically.
 
 - **Text** — font (nine open-source typefaces), size, weight, line spacing, letter spacing and alignment.
 - **Colors** — ready-made themes, or your own background, text and highlight colors; background
-  opacity; how visible already-read text stays.
+  opacity; how visible already-read text stays. On a light background (such as *Paper*) the
+  controls, labels and indicators switch to dark colors automatically, so they stay easy to see.
 - **Display** — width and height, which monitor, horizontal position, whether to attach to the
   screen edge or below a top taskbar, always-on-top, and the top-edge effect:
   - *Liquid*: the island flows out of the bezel with soft curved shoulders and moves like liquid.

@@ -12,7 +12,25 @@
   --read-opacity: 0.38;
   --pad-x: 40px;
   --ease: cubic-bezier(.2, .8, .2, 1);
+  /* Controls drawn on the island surface: light on dark islands, dark on light
+     ones (body.light-surface, chosen by inkFor() in core/contrast.js). The
+     floating chips (hint, jump back, loading) keep their own dark background. */
+  --ui-rgb: 255, 255, 255;
+  --ui-inverse-rgb: 0, 0, 0;
+  --ok: #34d17a;
+  --warn: #ffb347;
+  --bad: #ff6a5c;
+  --bad-text: #ffc2b8;
   color-scheme: dark;
+}
+
+body.light-surface {
+  --ui-rgb: 24, 24, 27;
+  --ui-inverse-rgb: 255, 255, 255;
+  --ok: #0f7a3e;
+  --warn: #985000;
+  --bad: #c0262d;
+  --bad-text: #c0262d;
 }
 
 * { box-sizing: border-box; }
@@ -214,7 +232,7 @@ body.controls-visible #controls {
   font-size: 12.5px;
   font-weight: 560;
   letter-spacing: 0.01em;
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(var(--ui-rgb), 0.66);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -230,23 +248,23 @@ body.controls-visible #controls {
   padding: 0;
   display: grid;
   place-items: center;
-  color: rgba(255, 255, 255, 0.86);
+  color: rgba(var(--ui-rgb), 0.86);
   background: transparent;
   cursor: pointer;
   transition: background-color .18s ease, color .18s ease, transform .18s var(--ease);
 }
-.ctl:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.ctl:hover { background: rgba(var(--ui-rgb), 0.12); color: rgb(var(--ui-rgb)); }
 .ctl:active { transform: scale(0.92); }
 .ctl:focus-visible { outline: 2px solid var(--hl); outline-offset: 1px; }
 .ctl[hidden] { display: none; }
 .ctl.primary {
   width: 40px;
   height: 40px;
-  background: #fff;
-  color: #000;
+  background: rgb(var(--ui-rgb));
+  color: rgb(var(--ui-inverse-rgb));
   margin: 0 4px;
 }
-.ctl.primary:hover { background: #f1f1f1; color: #000; }
+.ctl.primary:hover { background: rgba(var(--ui-rgb), 0.88); color: rgb(var(--ui-inverse-rgb)); }
 .ctl.mode.on { color: var(--hl); }
 .ctl.mode.on.listening { animation: mic-breathe 2.4s ease-in-out infinite; }
 @keyframes mic-breathe { 50% { background: color-mix(in srgb, var(--hl) 16%, transparent); } }
@@ -259,7 +277,7 @@ body.controls-visible #controls {
   bottom: 3px;
   height: 2px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--ui-rgb), 0.08);
   overflow: hidden;
   opacity: 0;
   transition: opacity .3s ease;
@@ -290,7 +308,7 @@ body.controls-visible #progress-bar { opacity: 0; }
 .grip-mark { z-index: 4; pointer-events: none; overflow: visible; }
 .grip-mark path {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.55);
+  stroke: rgba(var(--ui-rgb), 0.55);
   stroke-width: 3;
   stroke-linecap: round;
   opacity: 0;
@@ -334,7 +352,7 @@ body .grip-mark.hot path { opacity: 1; stroke: var(--hl); }
 /* ---------- Microphone indicator ---------- */
 
 #mic-meter {
-  --mc: #34d17a;
+  --mc: var(--ok);
   --lvl: 0;
   position: absolute;
   top: 12px;
@@ -350,7 +368,7 @@ body .grip-mark.hot path { opacity: 1; stroke: var(--hl); }
   justify-content: center;
   gap: 2px;
   color: var(--mc);
-  background: color-mix(in srgb, var(--mc) 12%, rgba(255, 255, 255, 0.06));
+  background: color-mix(in srgb, var(--mc) 12%, rgba(var(--ui-rgb), 0.06));
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--mc) 32%, transparent),
     0 0 0 calc(1px + var(--lvl) * 5px) color-mix(in srgb, var(--mc) 16%, transparent);
@@ -360,10 +378,10 @@ body .grip-mark.hot path { opacity: 1; stroke: var(--hl); }
   transition: background-color .3s ease, color .3s ease, opacity .25s ease;
 }
 #mic-meter[hidden] { display: none; }
-#mic-meter:hover { background: color-mix(in srgb, var(--mc) 22%, rgba(255, 255, 255, 0.08)); }
+#mic-meter:hover { background: color-mix(in srgb, var(--mc) 22%, rgba(var(--ui-rgb), 0.08)); }
 #mic-meter:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
-#mic-meter[data-state="searching"] { --mc: #ffb347; }
-#mic-meter[data-state="loading"] { --mc: rgba(255, 255, 255, 0.7); }
+#mic-meter[data-state="searching"] { --mc: var(--warn); }
+#mic-meter[data-state="loading"] { --mc: rgba(var(--ui-rgb), 0.7); }
 #mic-meter .bar {
   width: 2.5px;
   height: 3px;
@@ -477,12 +495,12 @@ body.controls-visible #hint { bottom: 62px; }
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: #fff;
+  color: rgb(var(--ui-rgb));
   padding-bottom: 12px;
 }
 #empty-state[hidden] { display: none; }
 .empty-title { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -0.01em; }
-.empty-sub { margin: 6px 0 16px; font-size: 14px; color: rgba(255, 255, 255, 0.6); }
+.empty-sub { margin: 6px 0 16px; font-size: 14px; color: rgba(var(--ui-rgb), 0.66); }
 .empty-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 
 .pill {
@@ -490,12 +508,12 @@ body.controls-visible #hint { bottom: 62px; }
   border-radius: 999px;
   padding: 8px 14px;
   font: 600 13px 'Inter Variable', system-ui, sans-serif;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
+  color: rgb(var(--ui-rgb));
+  background: rgba(var(--ui-rgb), 0.12);
   cursor: pointer;
   transition: background-color .18s ease;
 }
-.pill:hover { background: rgba(255, 255, 255, 0.2); }
+.pill:hover { background: rgba(var(--ui-rgb), 0.2); }
 
 #help {
   position: absolute;
@@ -503,7 +521,7 @@ body.controls-visible #hint { bottom: 62px; }
   z-index: 5;
   padding: 26px 34px 20px;
   background: color-mix(in srgb, var(--bg) 94%, transparent);
-  color: #fff;
+  color: rgb(var(--ui-rgb));
   overflow: auto;
   pointer-events: auto;
   border-radius: 0 0 28px 28px;
@@ -515,16 +533,16 @@ body.controls-visible #hint { bottom: 62px; }
   gap: 6px 26px;
   font-size: 13px;
 }
-.help-grid div { display: flex; justify-content: space-between; gap: 12px; color: rgba(255,255,255,.75); padding: 3px 0; }
+.help-grid div { display: flex; justify-content: space-between; gap: 12px; color: rgba(var(--ui-rgb), 0.78); padding: 3px 0; }
 kbd {
   font: 600 11.5px 'Inter Variable', system-ui, sans-serif;
   padding: 2px 6px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: rgba(var(--ui-rgb), 0.12);
+  color: rgb(var(--ui-rgb));
   white-space: nowrap;
 }
-.help-foot { margin: 14px 0 0; font-size: 12px; color: rgba(255,255,255,.5); text-align: center; }
+.help-foot { margin: 14px 0 0; font-size: 12px; color: rgba(var(--ui-rgb), 0.6); text-align: center; }
 
 /* ---------- Compact island ---------- */
 
@@ -548,18 +566,18 @@ body.toast-active #compact { opacity: 0 !important; }
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(var(--ui-rgb), 0.4);
   transition: background-color .3s ease, transform .12s linear;
 }
-body.voice-listening #compact-dot { background: #34d17a; }
-body.voice-searching #compact-dot { background: #ffb347; }
-body.voice-error #compact-dot { background: #ff6a5c; }
+body.voice-listening #compact-dot { background: var(--ok); }
+body.voice-searching #compact-dot { background: var(--warn); }
+body.voice-error #compact-dot { background: var(--bad); }
 body.auto-playing #compact-dot { background: var(--hl); }
 
 #compact-label {
   font-size: 12.5px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(var(--ui-rgb), 0.92);
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
@@ -569,7 +587,7 @@ body.auto-playing #compact-dot { background: var(--hl); }
 #compact-progress { flex: 0 0 auto; width: 16px; height: 16px; }
 #compact-progress svg { width: 16px; height: 16px; transform: rotate(-90deg); display: block; }
 #compact-progress circle { fill: none; stroke-width: 2.4; }
-#compact-progress .track { stroke: rgba(255, 255, 255, 0.16); }
+#compact-progress .track { stroke: rgba(var(--ui-rgb), 0.16); }
 #compact-progress .value {
   stroke: var(--hl);
   stroke-linecap: round;
@@ -587,22 +605,22 @@ body.auto-playing #compact-dot { background: var(--hl); }
   padding: 0 18px;
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: rgb(var(--ui-rgb));
   white-space: nowrap;
   overflow: hidden;
   opacity: 0;
   transition: opacity .2s ease;
 }
 #toast.show { opacity: 1; }
-#toast.error { color: #ffc2b8; }
+#toast.error { color: var(--bad-text); }
 
 #drop-overlay {
   position: absolute;
   display: grid;
   place-items: center;
   font: 650 16px 'Inter Variable', system-ui, sans-serif;
-  color: #fff;
-  border: 2px dashed rgba(255, 255, 255, 0.35);
+  color: rgb(var(--ui-rgb));
+  border: 2px dashed rgba(var(--ui-rgb), 0.4);
   border-radius: 22px;
   opacity: 0;
   pointer-events: none;
