@@ -45,10 +45,14 @@ jobs:
         run: npm test
 
       - name: Build installer, portable app and zip; publish draft release
-        # The release goes to the repository this workflow runs in.
-        run: npx electron-builder --win --publish always -c.publish.owner=${{ github.repository_owner }} -c.publish.repo=${{ github.event.repository.name }}
+        # The release goes to the repository this workflow runs in. Bash, because
+        # PowerShell splits "-c.publish.repo=…" arguments at the dot.
+        shell: bash
+        run: npx electron-builder --win --publish always "-c.publish.owner=$OWNER" "-c.publish.repo=$REPO"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
 
       - name: Write checksums
         shell: pwsh
