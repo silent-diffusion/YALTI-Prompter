@@ -299,6 +299,59 @@ body.controls-visible #progress-bar { opacity: 0; }
 body.controls-visible .grip-mark path { opacity: 0.6; }
 body .grip-mark.hot path { opacity: 1; stroke: var(--hl); }
 
+/* ---------- Microphone indicator ---------- */
+
+#mic-meter {
+  --mc: #34d17a;
+  --lvl: 0;
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--mc);
+  background: color-mix(in srgb, var(--mc) 12%, rgba(255, 255, 255, 0.06));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--mc) 32%, transparent),
+    0 0 0 calc(1px + var(--lvl) * 5px) color-mix(in srgb, var(--mc) 16%, transparent);
+  cursor: pointer;
+  pointer-events: auto;
+  contain: layout size;
+  transition: background-color .3s ease, color .3s ease, opacity .25s ease;
+}
+#mic-meter[hidden] { display: none; }
+#mic-meter:hover { background: color-mix(in srgb, var(--mc) 22%, rgba(255, 255, 255, 0.08)); }
+#mic-meter:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
+#mic-meter[data-state="searching"] { --mc: #ffb347; }
+#mic-meter[data-state="loading"] { --mc: rgba(255, 255, 255, 0.7); }
+#mic-meter .bar {
+  width: 2.5px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+#mic-meter .glyph { display: none; }
+#mic-meter .glyph .icon { display: block; }
+#mic-meter[data-state="loading"] .bar { animation: meter-wait 1.1s ease-in-out infinite; }
+#mic-meter[data-state="loading"] .bar:nth-child(2) { animation-delay: .1s; }
+#mic-meter[data-state="loading"] .bar:nth-child(3) { animation-delay: .2s; }
+#mic-meter[data-state="loading"] .bar:nth-child(4) { animation-delay: .3s; }
+#mic-meter[data-state="loading"] .bar:nth-child(5) { animation-delay: .4s; }
+@keyframes meter-wait { 0%, 60%, 100% { transform: scaleY(1); } 30% { transform: scaleY(2.6); } }
+body.style-floating #mic-meter {
+  top: max(12px, calc(var(--corner) * 0.36));
+  right: max(14px, calc(var(--corner) * 0.42));
+}
+
 /* ---------- Hints, countdown, help, empty state ---------- */
 
 #hint {
@@ -488,4 +541,7 @@ body.drop-target #drop-overlay { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
   .w, #controls, #hint, #expanded, #compact { transition: none !important; }
+  /* A still microphone whose glow follows the level, instead of moving bars. */
+  #mic-meter .bar { display: none; }
+  #mic-meter .glyph { display: block; }
 }

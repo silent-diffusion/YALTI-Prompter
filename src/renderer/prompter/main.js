@@ -4,6 +4,7 @@
 import { Island } from './island.js';
 import { ScriptView } from './script-view.js';
 import { VoiceInput } from './voice.js';
+import { MicMeter } from './mic-meter.js';
 import { buildModel } from '../../core/document.js';
 import { SpeechTracker } from '../../core/tracker.js';
 import { fontById } from '../../core/settings-schema.js';
@@ -73,6 +74,8 @@ const voice = new VoiceInput({
   onStatus: onVoiceStatus,
 });
 
+const micMeter = new MicMeter($('#mic-meter'), voice);
+
 /* ------------------------------------------------------------------ */
 /* Settings                                                            */
 /* ------------------------------------------------------------------ */
@@ -97,6 +100,7 @@ function applySettings(s, changed = null) {
   root.setProperty('--align', s.textAlign);
   root.setProperty('--read-opacity', String(s.readTextOpacity));
   root.setProperty('--pad-x', `${Math.round(Math.max(28, Math.min(64, s.width * 0.05)))}px`);
+  root.setProperty('--corner', `${s.cornerRadius}px`);
 
   body.classList.toggle('shadow', s.shadow);
   body.classList.toggle('mirror', s.mirror);
@@ -104,6 +108,7 @@ function applySettings(s, changed = null) {
   body.classList.toggle('hl-spoken', s.highlightSpoken);
   body.classList.toggle('marker', s.showReadingMarker);
   body.classList.toggle('show-progress', s.showProgress);
+  body.classList.toggle('style-floating', s.bezelStyle === 'floating');
 
   island.setLook({ style: s.bezelStyle, intensity: s.bezelIntensity, radius: s.cornerRadius });
   if (has('cornerRadius')) shapeGrips(s.cornerRadius);
@@ -123,6 +128,7 @@ function applySettings(s, changed = null) {
     startVoice();
   }
   if (has('highlightSpoken', 'dimReadText', 'scrollMode') && !all) refreshMarks();
+  if (has('showMicIndicator') && !all) updateMicMeter();
   renderControls();
   updateProgress();
 }
@@ -310,6 +316,19 @@ function updateVoiceClasses() {
   body.classList.toggle('voice-searching', listening && app.trackState === 'searching');
   body.classList.toggle('voice-error', app.voiceState === 'error');
   updateCompactLabel();
+  updateMicMeter();
+}
+
+/** The live microphone indicator: shown (and animated) only while listening in the expanded island. */
+function updateMicMeter() {
+  const el = $('#mic-meter');
+  const on = voice.running && !!app.settings?.showMicIndicator;
+  el.hidden = !on;
+  el.dataset.state = app.voiceState !== 'listening' ? 'loading' : app.trackState === 'searching' ? 'searching' : 'listening';
+  el.title = el.dataset.state === 'searching' ? 'Listening — waiting for words from your script. Click to stop.'
+    : el.dataset.state === 'loading' ? 'Starting the microphone… Click to stop.' : 'Listening — click to stop';
+  if (on && app.visibility === 'expanded') micMeter.start();
+  else micMeter.stop();
 }
 
 async function startVoice() {
@@ -458,6 +477,7 @@ function setVisibility(mode) {
   if (mode !== 'expanded') { body.classList.remove('controls-visible'); $('#help').hidden = true; }
   island.setMode(mode);
   updateCompactLabel();
+  updateMicMeter();
   reportState();
 }
 
@@ -791,6 +811,11 @@ function setupPointer() {
     body.classList.remove('drop-target');
     const res = await openDropped(api, e.dataTransfer);
     if (res.message && !res.notified) toast(res.message, 'error');
+  });
+
+  $('#mic-meter').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (voice.running) stopVoice();
   });
 
   $('#empty-state').addEventListener('click', (e) => {

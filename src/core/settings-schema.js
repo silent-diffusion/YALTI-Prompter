@@ -73,6 +73,7 @@ export const FIELDS = {
   // Voice
   speechSensitivity: { type: 'enum', options: ['cautious', 'balanced', 'responsive'], default: 'balanced' },
   allowJumps: { type: 'bool', default: true },
+  showMicIndicator: { type: 'bool', default: true },
   micDeviceId: { type: 'string', default: '' },
   modelId: { type: 'string', default: '' },
   speechThreads: { type: 'number', min: 1, max: 4, step: 1, default: 1 },

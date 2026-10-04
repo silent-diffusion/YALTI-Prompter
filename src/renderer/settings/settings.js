@@ -330,7 +330,8 @@ async function renderVoice() {
     card('Following your voice',
       row('Sensitivity', 'Cautious waits for more words before moving; Responsive follows faster.', seg('speechSensitivity', [
         { value: 'cautious', label: 'Cautious' }, { value: 'balanced', label: 'Balanced' }, { value: 'responsive', label: 'Responsive' }])),
-      row('Find my place anywhere', 'When you skip ahead or go back, jump to where you resumed. Off: only follow nearby text.', toggle('allowJumps'))),
+      row('Find my place anywhere', 'When you skip ahead or go back, jump to where you resumed. Off: only follow nearby text.', toggle('allowJumps')),
+      row('Microphone indicator', 'A small live waveform in the corner of the prompter while YALTI listens. Click it to stop listening.', toggle('showMicIndicator'))),
     card('Engine',
       row('Speech model', models.length ? 'English is included. More sherpa-onnx streaming models can be added to the models folder.' : 'Voice tracking needs a model; manual and auto-scroll still work.', modelSelect),
       row('Processor threads', 'More threads can lower latency on slow machines; one is plenty for most.', slider('speechThreads', { format: (v) => String(v) })),

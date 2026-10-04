@@ -90,6 +90,12 @@ YALTI remembers where you were in each script and returns there the next time yo
 3. Start reading. The words you have said on the current line are tinted, the word you just said is
    highlighted, and the next line stays at the reading line.
 
+While YALTI listens, a small round **microphone indicator** in the top-right corner of the island
+shows a live waveform of what the microphone hears — green while it follows your script, amber
+while it waits for words from the script. Click it to stop listening. (Turn it off in
+*Settings → Voice → Microphone indicator*. With reduced motion turned on in Windows it shows a
+still microphone whose glow follows your voice.)
+
 YALTI is built for real speaking, not perfect reading:
 
 - **Pauses** — nothing moves while you are quiet.
@@ -108,6 +114,7 @@ If you scroll by hand while listening, YALTI continues from wherever you scrolle
 - **Sensitivity** — *Cautious* waits for more words before moving (good for noisy rooms or lots of
   ad-libbing); *Responsive* follows faster (good for clean audio and close reading).
 - **Find my place anywhere** — turn off to only follow nearby text and never jump to distant sections.
+- **Microphone indicator** — show or hide the live waveform in the corner of the island.
 - **Microphone** — choose the input device and use *Test microphone* to check the level.
 - **Processor threads** — one is enough for most computers.
 
