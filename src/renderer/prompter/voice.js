@@ -34,6 +34,10 @@ export class VoiceInput {
     this.active = true;
     this.restarts = 0;
     this.h.onStatus('connecting');
+    // Always connect afresh. While voice tracking was off the engine may have been
+    // unloaded (it is, after a few idle minutes): the old port would lead nowhere,
+    // and asking for a new one starts the engine again.
+    this._dropPort();
     try {
       await this._connectEngine();
       if (!this.active) return;
@@ -68,8 +72,7 @@ export class VoiceInput {
   /** The engine process restarted: get a fresh port and keep listening. */
   async reconnect() {
     if (!this.active) return;
-    this.engineReady = false;
-    this.port = null;
+    this._dropPort();
     try {
       await this._connectEngine();
       this.h.onStatus(this.engineReady ? 'listening' : 'loading');
@@ -80,8 +83,16 @@ export class VoiceInput {
     }
   }
 
+  _dropPort() {
+    if (this.port) {
+      this.port.onmessage = null;
+      try { this.port.close(); } catch { /* already gone */ }
+    }
+    this.port = null;
+    this.engineReady = false;
+  }
+
   async _connectEngine() {
-    if (this.port) return;
     const portPromise = new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         window.removeEventListener('message', onMessage);
