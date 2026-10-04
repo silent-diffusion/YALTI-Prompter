@@ -125,9 +125,15 @@ async function init() {
     if (dropKind(e.dataTransfer) !== 'file') return;
     e.preventDefault();
     if (dirty() && !window.confirm('Discard unsaved changes and open the dropped file?')) return;
-    savedText = text.value; // the edits were given up, so the dropped script may replace them
+    // The edits were given up, so the dropped script may replace them (even the same file);
+    // if it can't be opened, they are still unsaved.
+    const kept = savedText;
+    savedText = text.value;
     openDropped(api, e.dataTransfer).then((res) => {
-      if (!res.ok && res.message && !res.notified) window.alert(res.message);
+      if (res.ok) return;
+      savedText = kept;
+      paintTitle();
+      if (res.message && !res.notified) window.alert(res.message);
     });
   });
 

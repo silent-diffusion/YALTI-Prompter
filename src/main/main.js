@@ -185,14 +185,19 @@ function createUpdater() {
     repo: appRepo(),
     fetch: (url, init) => net.fetch(url, init),
     downloadDir: updateDownloadDir,
-    launch: launchDetached,
+    launch: launchDetached, // called while quitting, from will-quit
     quit: () => { quitting = true; app.quit(); },
     beforeRelaunch: () => app.releaseSingleInstanceLock(),
     reveal: (file) => shell.showItemInFolder(file),
   });
+  let shownState = '';
   updater.on('status', (status) => {
     panels.broadcast('update:status', status);
-    tray.refresh();
+    // Download progress arrives several times a second; the tray menu only shows the state.
+    if (status.state !== shownState) {
+      shownState = status.state;
+      tray.refresh();
+    }
   });
 }
 
@@ -463,7 +468,8 @@ app.on('window-all-closed', () => {
 });
 
 app.on('will-quit', () => {
-  // A downloaded update installs silently now (never while Windows is shutting down).
+  // A requested restart into the new version, or a downloaded installer update,
+  // starts now (never while Windows is shutting down).
   if (!sessionEnding) updater?.installOnQuit();
   unregisterShortcuts();
   speech?.stop();

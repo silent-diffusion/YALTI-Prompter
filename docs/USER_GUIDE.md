@@ -108,8 +108,8 @@ YALTI is built for real speaking, not perfect reading:
 - **Coming back somewhere else** — start reading any part of the script and YALTI finds it, usually
   within five to ten words. It prefers nearby text and only jumps far when it is sure.
 - **Jumping back** — when YALTI moves your place a long way, a small *Back to “…”* button appears
-  at the top of the island for a few seconds, showing the first words of where you were. Click it
-  (or press **Backspace**, or `Ctrl+Alt+Backspace` from anywhere) to return; it then offers
+  at the top of the island for about ten seconds, showing the first words of where you were. While
+  it is shown, click it (or press **Backspace**, or `Ctrl+Alt+Backspace` from anywhere) to return; it then offers
   *Return to “…”* in case the jump was right after all. It only appears for real jumps: never for
   the next line, and for a skip of two or three lines only once your old place has scrolled out of
   view. Scrolling by hand dismisses it.

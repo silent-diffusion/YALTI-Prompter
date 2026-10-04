@@ -280,7 +280,9 @@ function considerJumpBack(from, toAnchor, jumped) {
   const toLine = view.lineOfWord(toAnchor);
   if (!fromLine || !toLine) return;
   const offer = shouldOfferJumpBack({
-    fromWord: from.anchor,
+    // Before the first heard words there is no place to go back to: finding the
+    // reader the first time is not a jump.
+    fromWord: from.position >= 0 ? from.anchor : -1,
     toWord: toAnchor,
     lineDelta: view.wordLine[toAnchor] - view.wordLine[from.anchor],
     fromY: view.readingY + (fromLine.center - toLine.center),
@@ -304,13 +306,14 @@ function setJumpBack(target) {
   el.querySelector('.jb-text').textContent = `${target.returning ? 'Return to' : 'Back to'} “${where}”`;
   el.title = `${target.returning ? 'Return to where voice tracking had moved' : 'Go back to where you were before voice tracking moved'} (Backspace)`;
   el.classList.add('show');
-  hideJumpBackSoon(9000);
+  hideJumpBackSoon(12000);
 }
 
+/** The offer (button and Backspace) lasts while the button is shown; hovering keeps it. */
 function hideJumpBackSoon(ms) {
   clearTimeout(app.jumpBackTimer);
   app.jumpBackTimer = setTimeout(() => {
-    if (!$('#jump-back').matches(':hover')) $('#jump-back').classList.remove('show');
+    if (!$('#jump-back').matches(':hover')) setJumpBack(null);
   }, ms);
 }
 

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { compareVersions, parseVersion } from '../../src/core/version.js';
@@ -87,7 +87,7 @@ function fakeGitHub({ version = '1.1.0', files = {}, sums = true, fail = null } 
   return { fetch, calls };
 }
 
-function makeUpdater(gh, kind = 'installer', currentVersion = '1.0.0') {
+function makeUpdater(gh, kind = 'installer', currentVersion = '1.0.0', extra = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'yalti-update-'));
   const log = [];
   const u = new Updater({
@@ -97,6 +97,7 @@ function makeUpdater(gh, kind = 'installer', currentVersion = '1.0.0') {
     quit: () => log.push(['quit']),
     beforeRelaunch: () => log.push(['release-lock']),
     reveal: (file) => log.push(['reveal', file.split(/[\\/]/).pop()]),
+    ...extra,
   });
   return { u, dir, log, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
@@ -110,7 +111,7 @@ test('up to date when the latest release is this version', async () => {
   cleanup();
 });
 
-test('installer: check, download, verify, then install silently and quit', async () => {
+test('installer: check, download, verify, then quit and install silently with a restart', async () => {
   const body = 'MZ-installer-bytes'.repeat(1000);
   const gh = fakeGitHub({ files: { 'YALTI-Prompter-Setup-1.1.0.exe': body, 'YALTI-Prompter-Portable-1.1.0.exe': 'other' } });
   const { u, dir, log, cleanup } = makeUpdater(gh);
@@ -122,9 +123,13 @@ test('installer: check, download, verify, then install silently and quit', async
   assert.ok(!('file' in s), 'paths are not exposed to windows');
   assert.deepEqual(readdirSync(dir), ['YALTI-Prompter-Setup-1.1.0.exe']);
   assert.ok(states.includes('downloading'));
-  assert.equal(await u.install(), true);
-  assert.deepEqual(log, [['launch', 'YALTI-Prompter-Setup-1.1.0.exe', ['--updated', '/S', '--force-run']], ['quit']]);
+  assert.equal(u.install(), true);
+  assert.deepEqual(log, [['quit']], 'nothing starts before the quit really happens');
+  assert.equal(u.status.state, 'installing');
+  assert.equal(u.installOnQuit(), true);
+  assert.deepEqual(log, [['quit'], ['launch', 'YALTI-Prompter-Setup-1.1.0.exe', ['--updated', '/S', '--force-run']]]);
   assert.equal(u.installOnQuit(), false, 'never runs the installer twice');
+  assert.equal(u.install(), false);
   cleanup();
 });
 
@@ -147,7 +152,7 @@ test('a download that doesn’t match its checksum is discarded', async () => {
   assert.equal(s.state, 'error');
   assert.match(s.error, /checksum/);
   assert.deepEqual(readdirSync(dir), []);
-  assert.equal(await u.install(), false);
+  assert.equal(u.install(), false);
   cleanup();
 });
 
@@ -175,16 +180,17 @@ test('portable copies start the new file; zip copies are revealed; development b
   const p = makeUpdater(fakeGitHub({ files }), 'portable');
   await p.u.check();
   await p.u.download();
-  assert.equal(await p.u.install(), true);
-  assert.deepEqual(p.log, [['release-lock'], ['launch', 'YALTI-Prompter-Portable-1.1.0.exe', []], ['quit']]);
-  assert.equal(p.u.installOnQuit(), false);
+  assert.equal(p.u.install(), true);
+  assert.deepEqual(p.log, [['quit']]);
+  assert.equal(p.u.installOnQuit(), true);
+  assert.deepEqual(p.log, [['quit'], ['release-lock'], ['launch', 'YALTI-Prompter-Portable-1.1.0.exe', []]]);
   p.cleanup();
 
   const z = makeUpdater(fakeGitHub({ files }), 'zip');
   await z.u.check();
   await z.u.download();
   assert.deepEqual(z.log, [['reveal', 'YALTI-Prompter-1.1.0-win-x64.zip']]);
-  assert.equal(await z.u.install(), false);
+  assert.equal(z.u.install(), false);
   z.cleanup();
 
   const d = makeUpdater(fakeGitHub({ files }), 'dev');
@@ -195,16 +201,40 @@ test('portable copies start the new file; zip copies are revealed; development b
   d.cleanup();
 });
 
-test('stays open and says so when the update can’t be started', async () => {
-  const gh = fakeGitHub({ files: { 'YALTI-Prompter-Setup-1.1.0.exe': 'abc' } });
-  const { u, log, cleanup } = makeUpdater(gh);
-  u.deps.launch = async () => { throw new Error('blocked by policy'); };
+test('a cancelled quit brings the install button back, and the restart still happens at the next quit', async () => {
+  const gh = fakeGitHub({ files: { 'YALTI-Prompter-Portable-1.1.0.exe': 'abc' } });
+  const { u, log, cleanup } = makeUpdater(gh, 'portable', '1.0.0', { quitGraceMs: 20 });
   await u.check();
   await u.download();
-  assert.equal(await u.install(), false);
+  u.install();
+  assert.equal(u.status.state, 'installing');
+  await new Promise((r) => setTimeout(r, 40)); // the user chose to keep editing; YALTI is still running
   assert.equal(u.status.state, 'downloaded');
-  assert.match(u.status.error, /blocked by policy/);
-  assert.ok(!log.some((l) => l[0] === 'quit'));
+  assert.deepEqual(log, [['quit']]);
+  assert.equal(u.installOnQuit(), true);
+  assert.deepEqual(log.slice(1), [['release-lock'], ['launch', 'YALTI-Prompter-Portable-1.1.0.exe', []]]);
+  cleanup();
+});
+
+test('a download that can’t be written fails cleanly instead of hanging', async () => {
+  const gh = fakeGitHub({ files: { 'YALTI-Prompter-Setup-1.1.0.exe': 'abc'.repeat(50000) } });
+  const { u, dir, cleanup } = makeUpdater(gh);
+  mkdirSync(join(dir, 'YALTI-Prompter-Setup-1.1.0.exe.part')); // the .part path can't be opened as a file
+  await u.check();
+  const s = await Promise.race([u.download(), new Promise((r) => setTimeout(() => r({ state: 'still pending' }), 3000))]);
+  assert.equal(s.state, 'error');
+  assert.match(s.error, /Updating failed/);
+  cleanup();
+});
+
+test('no download starts while a check is running', async () => {
+  const gh = fakeGitHub({ files: { 'YALTI-Prompter-Setup-1.1.0.exe': 'abc' } });
+  const { u, cleanup } = makeUpdater(gh);
+  await u.check();
+  const checking = u.check(); // e.g. the daily check fires
+  u.state = 'checking';
+  assert.equal((await u.download()).state, 'checking');
+  await checking;
   cleanup();
 });
 

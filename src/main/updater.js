@@ -10,15 +10,19 @@
 // The Electron parts (fetch, file locations, launching, quitting) are passed
 // in, so the logic can be tested in plain Node.
 
-import { EventEmitter } from 'node:events';
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { Readable, Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { compareVersions } from '../core/version.js';
 import { checksumFromLatestYml, checksumFromSums, latestReleaseApi, pickAsset, releaseInfo } from '../core/updates.js';
 
 const PROGRESS_EVERY_MS = 150;
+// If YALTI is still running this long after "install now" asked it to quit, the
+// quit was cancelled (e.g. the user kept editing an unsaved script).
+const QUIT_GRACE_MS = 5000;
 
 class UpdateError extends Error {}
 
@@ -33,13 +37,14 @@ class UpdateError extends Error {}
  *   beforeRelaunch?: () => void,
  *   reveal?: (file: string) => void,
  *   now?: () => number,
+ *   quitGraceMs?: number,
  * }} UpdaterDeps
  */
 export class Updater extends EventEmitter {
   /** @param {UpdaterDeps} deps */
   constructor(deps) {
     super();
-    this.deps = { now: Date.now, reveal: () => {}, beforeRelaunch: () => {}, ...deps };
+    this.deps = { now: Date.now, reveal: () => {}, beforeRelaunch: () => {}, quitGraceMs: QUIT_GRACE_MS, ...deps };
     this.state = 'idle'; // idle | checking | up-to-date | available | downloading | downloaded | installing | error
     this.latest = null;
     this.checkedAt = null;
@@ -48,6 +53,8 @@ export class Updater extends EventEmitter {
     this.file = null;
     this.abort = null;
     this.installed = false;
+    this.restartArgs = null; // set by install(); the update starts as YALTI quits
+    this.graceTimer = null;
   }
 
   /** What windows may see (no file system paths). */
@@ -110,7 +117,7 @@ export class Updater extends EventEmitter {
   async download() {
     const info = this.latest;
     const { kind } = this.deps;
-    if (!info || this.state === 'downloading' || this.state === 'downloaded' || kind === 'dev') return this.status;
+    if (!info || kind === 'dev' || ['checking', 'downloading', 'downloaded', 'installing'].includes(this.state)) return this.status;
     if (compareVersions(info.version, this.deps.currentVersion) <= 0) return this.status;
     this.abort = new AbortController();
     this._set({ state: 'downloading', error: null, progress: { received: 0, total: 0 } });
@@ -133,26 +140,26 @@ export class Updater extends EventEmitter {
       const res = await this._get(asset.url, 'application/octet-stream');
       const total = Number(res.headers.get('content-length')) || asset.size || 0;
       const hash = createHash(expected.algorithm);
-      const out = createWriteStream(part);
       let received = 0;
       let lastEmit = 0;
-      try {
-        const reader = res.body.getReader();
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          hash.update(value);
-          received += value.length;
-          if (!out.write(value)) await once(out, 'drain');
+      const meter = new Transform({
+        transform: (chunk, _encoding, done) => {
+          hash.update(chunk);
+          received += chunk.length;
           const t = this.deps.now();
           if (t - lastEmit >= PROGRESS_EVERY_MS) {
             lastEmit = t;
             this._set({ progress: { received, total } });
           }
-        }
+          done(null, chunk);
+        },
+      });
+      // A write error (disk full, folder locked) rejects here like any other failure.
+      const out = createWriteStream(part);
+      try {
+        await pipeline(Readable.fromWeb(res.body), meter, out, { signal: this.abort.signal });
       } finally {
-        out.end();
-        await once(out, 'close');
+        if (!out.closed) await once(out, 'close').catch(() => {});
       }
       if (hash.digest(expected.encoding) !== expected.digest) {
         throw new UpdateError('The download didn’t match its published checksum, so it was discarded. Please try again.');
@@ -161,7 +168,7 @@ export class Updater extends EventEmitter {
       part = null;
       this._done(dest);
     } catch (err) {
-      if (part) rmSync(part, { force: true });
+      if (part) try { rmSync(part, { force: true }); } catch { /* locked or not a file: leave it */ }
       // Cancelled: whatever error the aborted request surfaced, go back to "available".
       if (this.abort?.signal.aborted || err?.name === 'AbortError') this._set({ state: 'available', progress: null });
       else this._set({ state: 'error', error: messageOf(err), progress: null });
@@ -192,38 +199,44 @@ export class Updater extends EventEmitter {
   }
 
   /**
-   * Install the downloaded update now: the installer runs silently and starts
-   * the new version; a portable copy starts the new file. YALTI quits once the
-   * new process is running (and stays if it could not be started).
+   * Install the downloaded update now: YALTI quits, and as it does, the
+   * installer runs silently and restarts the new version (or a portable copy
+   * starts the new file). Nothing starts unless the quit really happens: a
+   * window may still cancel it, for example to keep unsaved edits.
    */
-  async install() {
-    if (this.state !== 'downloaded' || !this.file || this.installed) return false;
+  install() {
+    if (!['downloaded', 'installing'].includes(this.state) || !this.file || this.installed) return false;
     const { kind } = this.deps;
     if (kind === 'zip') { this.deps.reveal(this.file); return false; }
-    this.installed = true;
+    this.restartArgs = kind === 'installer' ? ['--updated', '/S', '--force-run'] : [];
     this._set({ state: 'installing', error: null });
-    try {
-      if (kind === 'installer') {
-        await this.deps.launch(this.file, ['--updated', '/S', '--force-run']);
-      } else {
-        this.deps.beforeRelaunch(); // let the new copy take over as the running instance
-        await this.deps.launch(this.file, []);
-      }
-    } catch (err) {
-      this.installed = false;
-      this._set({ state: 'downloaded', error: `The update couldn’t be started: ${err?.message || err}` });
-      return false;
-    }
+    clearTimeout(this.graceTimer);
+    this.graceTimer = setTimeout(() => {
+      // Still here: the quit was cancelled. Offer the button again (the restart stays requested).
+      if (!this.installed && this.state === 'installing') this._set({ state: 'downloaded' });
+    }, this.deps.quitGraceMs);
+    this.graceTimer.unref?.();
     this.deps.quit();
     return true;
   }
 
-  /** YALTI is quitting: a downloaded installer update installs silently now. */
+  /**
+   * YALTI is quitting: start a requested restart into the new version, or let a
+   * downloaded installer update install silently. Returns whether one started.
+   */
   installOnQuit() {
-    if (this.state !== 'downloaded' || !this.file || this.installed || this.deps.kind !== 'installer') return false;
+    clearTimeout(this.graceTimer);
+    if (!['downloaded', 'installing'].includes(this.state) || !this.file || this.installed) return false;
+    const { kind } = this.deps;
+    let args = this.restartArgs;
+    if (!args) {
+      if (kind !== 'installer') return false;
+      args = ['--updated', '/S'];
+    }
     this.installed = true;
-    // The app is exiting; if the installer can't start, the update simply waits for next time.
-    Promise.resolve(this.deps.launch(this.file, ['--updated', '/S'])).catch(() => {});
+    if (kind === 'portable') this.deps.beforeRelaunch(); // the new copy becomes the running instance
+    // The app is exiting; if the update can't start, it simply waits for next time.
+    Promise.resolve(this.deps.launch(this.file, args)).catch(() => {});
     return true;
   }
 }
