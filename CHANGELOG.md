@@ -4,7 +4,7 @@ All notable changes to YALTI Prompter are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [semantic versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.1] — 2026-10-04
 
 ### Added
 
@@ -79,6 +79,6 @@ First public release.
 - Windows installer (per-user, with uninstaller), portable `.exe` and portable `.zip`.
 - Documentation, third-party license notices and automated unit, speech and app tests.
 
-[Unreleased]: https://github.com/silent-diffusion/YALTI-Prompter/compare/v1.1.0...HEAD
+[1.1.1]: https://github.com/silent-diffusion/YALTI-Prompter/releases/tag/v1.1.1
 [1.1.0]: https://github.com/silent-diffusion/YALTI-Prompter/releases/tag/v1.1.0
 [1.0.0]: https://github.com/silent-diffusion/YALTI-Prompter/releases/tag/v1.0.0
