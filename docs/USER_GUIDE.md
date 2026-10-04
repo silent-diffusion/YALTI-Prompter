@@ -50,7 +50,10 @@ The status dot in the compact island means:
 ### Opening a script
 
 - **Ctrl+O** or the folder button opens a file.
-- **Drag and drop** a file onto the island.
+- **Drag and drop** a file onto the island, onto *Settings → Script* (or anywhere in the Settings
+  window), or onto the script editor.
+- **Drag highlighted text** from Word, a browser, an email or any other app and drop it on the
+  island or in Settings — it becomes the script, just like pasting.
 - **Ctrl+V** creates a script from the text on your clipboard.
 - **Recent scripts** are listed in the tray menu and in *Settings → Script*.
 - You can also open a file with YALTI from Explorer (*Open with → YALTI Prompter*).

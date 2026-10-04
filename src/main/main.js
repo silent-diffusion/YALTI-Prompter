@@ -2,11 +2,12 @@
 
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, screen, session, shell } from 'electron';
 import { existsSync, mkdirSync } from 'node:fs';
+import { basename } from 'node:path';
 import { configurePortableMode, paths } from './paths.js';
 import { APP_ORIGIN, handleProtocol, registerScheme } from './protocol.js';
 import { SettingsStore, StateStore } from './store.js';
 import { ScriptManager } from './scripts.js';
-import { SCRIPT_EXTENSIONS } from './script-parser.js';
+import { formatForPath, SCRIPT_EXTENSIONS } from './script-parser.js';
 import { SpeechHost } from './speech-host.js';
 import { PrompterWindow } from './prompter-window.js';
 import { Panels } from './panels.js';
@@ -89,6 +90,28 @@ async function openScriptDialog(parent) {
   });
   if (!res.canceled && res.filePaths[0]) openScriptFile(res.filePaths[0]);
   return !res.canceled;
+}
+
+const MAX_TEXT_CHARS = 25 * 1024 * 1024;
+
+/**
+ * Text dropped on a window: a highlighted selection (no name), or the contents
+ * of a file that has no path on disk (e.g. dragged out of a browser), which
+ * keeps its format from the file name.
+ */
+function openDroppedText(text, name) {
+  // The prompter shows the error; other windows can show the returned message too.
+  const fail = (message) => { notify(message, 'error'); return { ok: false, message, notified: true }; };
+  if (typeof text !== 'string' || !text.trim()) return fail('There is no text to use as a script.');
+  if (text.length > MAX_TEXT_CHARS) return fail('That text is too large for a script.');
+  if (typeof name === 'string' && name) {
+    if (!ScriptManager.isSupported(name)) return fail('That file type isn’t a supported script (.txt, .md, …).');
+    scripts.openText(text, { title: basename(name).replace(/\.[^.]+$/, ''), format: formatForPath(name) });
+  } else {
+    scripts.openText(text, { title: 'Dropped text' });
+  }
+  showPrompter();
+  return { ok: true };
 }
 
 function pasteScript() {
@@ -231,6 +254,7 @@ function registerIpc() {
     openScriptFile(file);
     return true;
   });
+  handle('script:open-text', (_e, { text, name } = {}) => openDroppedText(text, name));
   handle('script:reload', () => !!scripts.reload());
   handle('script:paste', () => pasteScript());
   handle('script:sample', () => { scripts.openSample(); return true; });
@@ -242,7 +266,7 @@ function registerIpc() {
       const cur = scripts.current;
       return scripts._setCurrent({ ...scripts._payload(text, { path: cur.path, format: cur.format, kind: 'file', keepPosition: true }), unsaved: true });
     }
-    return scripts.openText(text, { keepPosition: true, title: scripts.current?.title });
+    return scripts.openText(text, { keepPosition: true, title: scripts.current?.title, format: scripts.current?.format || 'markdown' });
   });
   handle('script:save', async (e, { text, saveAs } = {}) => {
     if (typeof text !== 'string') return null;

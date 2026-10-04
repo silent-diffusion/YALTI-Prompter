@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('yalti', {
 
   openScriptDialog: () => ipcRenderer.invoke('script:open-dialog'),
   openScriptPath: (path) => ipcRenderer.invoke('script:open-path', path),
+  openScriptText: (text, name) => ipcRenderer.invoke('script:open-text', { text, name }),
   reloadScript: () => ipcRenderer.invoke('script:reload'),
   pasteScript: () => ipcRenderer.invoke('script:paste'),
   openSample: () => ipcRenderer.invoke('script:sample'),

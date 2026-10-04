@@ -2,6 +2,7 @@
 // Save writes the file. Pasted or new scripts live inside YALTI until saved.
 
 import { icon } from '../shared/icons.js';
+import { dropKind, openDropped } from '../shared/drop.js';
 import { countWords, describeDuration, SPEAKING_WPM } from '../../core/text.js';
 
 const api = window.yalti;
@@ -107,8 +108,27 @@ async function init() {
   // Another script was opened (or the file changed on disk).
   api.on('script:loaded', (s) => {
     if (applying || s.unsaved) return;
-    if (script && s.kind === 'scratch' && script.kind !== 'file') { script = s; paintTitle(); return; }
+    // Our own in-app script coming back: keep the cursor, just take the new identity.
+    // Different text (pasted or dropped elsewhere) replaces what is shown.
+    if (script && s.kind === 'scratch' && script.kind !== 'file' && s.text === text.value) { script = s; paintTitle(); return; }
     load(s);
+  });
+
+  // Dropped files open as the script. Dropped text keeps the usual behavior:
+  // it is inserted where you drop it.
+  window.addEventListener('dragover', (e) => {
+    if (dropKind(e.dataTransfer) !== 'file') return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+  window.addEventListener('drop', (e) => {
+    if (dropKind(e.dataTransfer) !== 'file') return;
+    e.preventDefault();
+    if (dirty() && !window.confirm('Discard unsaved changes and open the dropped file?')) return;
+    savedText = text.value; // the edits were given up, so the dropped script may replace them
+    openDropped(api, e.dataTransfer).then((res) => {
+      if (!res.ok && res.message && !res.notified) window.alert(res.message);
+    });
   });
 
   window.addEventListener('beforeunload', (e) => {

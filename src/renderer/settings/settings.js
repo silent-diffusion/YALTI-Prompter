@@ -4,6 +4,7 @@
 import { FIELDS, FONTS, fontById } from '../../core/settings-schema.js';
 import { describeDuration, SPEAKING_WPM } from '../../core/text.js';
 import { icon } from '../shared/icons.js';
+import { dropKind, openDropped } from '../shared/drop.js';
 
 const api = window.yalti;
 let S = null; // current settings
@@ -174,9 +175,15 @@ async function renderScript() {
   paintRecent();
   cleanup.push(api.on('script:loaded', paintRecent));
 
+  const zone = h('button', { type: 'button', class: 'dropzone', onclick: () => api.openScriptDialog() },
+    h('span', { class: 'dz-icon', html: icon('file-text', 22) }),
+    h('strong', {}, 'Drop a script or highlighted text here'),
+    h('span', {}, 'Text, Markdown and subtitle files, or a selection dragged from Word, a browser or any app. Click to browse.'));
+
   return [
     h('h1', {}, 'Script'),
     h('p', { class: 'lede' }, 'Open plain text (.txt), Markdown (.md) and subtitle files (.srt, .vtt). Markdown is shown as clean text — headings, lists and emphasis without the symbols. Text in [square brackets] is shown as a quiet cue and never tracked.'),
+    zone,
     card(null,
       h('div', { class: 'row' }, info, h('div', { class: 'control' },
         button('Open…', () => api.openScriptDialog(), { iconName: 'folder-open', cls: 'primary' }),
@@ -473,6 +480,48 @@ function renderAbout() {
   ];
 }
 
+/* ---------- drag and drop ---------- */
+
+let flashTimer = null;
+function flash(message, kind = 'info') {
+  let el = document.getElementById('flash');
+  if (!el) {
+    el = h('div', { id: 'flash', role: 'status', 'aria-live': 'polite' });
+    document.body.append(el);
+  }
+  el.textContent = message;
+  el.classList.toggle('error', kind === 'error');
+  el.classList.add('show');
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+/** Dropping a script file or highlighted text anywhere in Settings opens it in the prompter. */
+function setupDrop() {
+  window.addEventListener('dragover', (e) => {
+    if (!dropKind(e.dataTransfer)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    document.body.classList.add('drop-target');
+  });
+  window.addEventListener('dragleave', (e) => {
+    if (!e.relatedTarget) document.body.classList.remove('drop-target');
+  });
+  window.addEventListener('drop', async (e) => {
+    document.body.classList.remove('drop-target');
+    if (!dropKind(e.dataTransfer)) return;
+    e.preventDefault();
+    const res = await openDropped(api, e.dataTransfer);
+    if (res.ok) {
+      const script = await api.currentScript();
+      flash(`Opened “${script?.title || 'your script'}” in the prompter`);
+      if (current !== 'script') show('script');
+    } else {
+      flash(res.message || 'That couldn’t be opened as a script.', 'error');
+    }
+  });
+}
+
 /* ---------- navigation ---------- */
 
 let cleanup = [];
@@ -501,6 +550,7 @@ async function init() {
   api.on('settings:changed', (s) => { S = s; for (const fn of updaters) fn(S); });
   api.on('shortcuts:status', (st) => { shortcutStatus = st; for (const fn of updaters) fn(S); });
   api.on('panel:section', (id) => show(id));
+  setupDrop();
   await show(location.hash.slice(1) || 'text');
 }
 

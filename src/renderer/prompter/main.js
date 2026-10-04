@@ -11,6 +11,7 @@ import { describeDuration, SPEAKING_WPM } from '../../core/text.js';
 import { Animator } from '../../core/spring.js';
 import { cornerGrip } from '../../core/island-shape.js';
 import { icon } from '../shared/icons.js';
+import { dropKind, openDropped } from '../shared/drop.js';
 
 const api = window.yalti;
 const $ = (sel) => document.querySelector(sel);
@@ -770,23 +771,26 @@ function setupPointer() {
     grip.addEventListener('pointercancel', endResize);
   }
 
-  // Drop a file anywhere on the island to open it.
+  // Drop a file, or text highlighted in another app, anywhere on the island.
   document.addEventListener('dragover', (e) => {
-    if (![...(e.dataTransfer?.types || [])].includes('Files')) return;
+    const kind = dropKind(e.dataTransfer);
+    if (!kind) return;
     e.preventDefault();
-    body.classList.add('drop-target');
+    e.dataTransfer.dropEffect = 'copy';
+    if (!body.classList.contains('drop-target')) {
+      $('#drop-overlay').textContent = kind === 'file' ? 'Drop to open this script' : 'Drop to use this text as your script';
+      body.classList.add('drop-target');
+    }
     if (app.visibility === 'compact') setVisibility('expanded');
   });
   document.addEventListener('dragleave', (e) => {
     if (!e.relatedTarget) body.classList.remove('drop-target');
   });
-  document.addEventListener('drop', (e) => {
+  document.addEventListener('drop', async (e) => {
     e.preventDefault();
     body.classList.remove('drop-target');
-    const file = e.dataTransfer?.files?.[0];
-    if (!file) return;
-    const path = api.pathForFile(file);
-    if (path) api.openScriptPath(path);
+    const res = await openDropped(api, e.dataTransfer);
+    if (res.message && !res.notified) toast(res.message, 'error');
   });
 
   $('#empty-state').addEventListener('click', (e) => {
