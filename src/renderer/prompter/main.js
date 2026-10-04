@@ -43,6 +43,8 @@ const app = {
   countdownTimer: null,
   jumpBack: null, // { anchor, position, returning } — where "jump back" goes
   jumpBackTimer: null,
+  loadingTicker: 0,
+  loadingHideTimer: null,
 };
 
 const island = new Island({
@@ -359,8 +361,6 @@ function onVoiceStatus(state, message, detail) {
   if (state === 'listening') {
     app.playing = true;
     if (app.trackState === 'idle') hint('Listening — start reading', { ms: 2200 });
-  } else if (state === 'loading') {
-    hint('Loading speech model…', { ms: 4000 });
   } else if (state === 'connecting' && message) {
     hint(message, { ms: 2500 });
   } else if (state === 'error') {
@@ -386,6 +386,49 @@ function updateVoiceClasses() {
   body.classList.toggle('voice-error', app.voiceState === 'error');
   updateCompactLabel();
   updateMicMeter();
+  updateVoiceLoading();
+}
+
+/** How far the speech model has loaded, 0–1 (see SpeechHost). The last step can't be
+ *  measured, so it moves toward 97 % over the time it took last time. */
+function loadingFraction(p) {
+  if (!p) return 0;
+  if (p.phase === 'init' && p.initMs > 0) {
+    const t = Math.min(1, Math.max(0, (Date.now() - p.at) / p.initMs));
+    return p.fraction + (0.97 - p.fraction) * t;
+  }
+  return p.fraction || 0;
+}
+
+/** The loading indicator beside the microphone indicator, while the speech model loads. */
+function updateVoiceLoading() {
+  const el = $('#voice-loading');
+  const s = app.speechStatus;
+  const paint = (f) => {
+    const pct = Math.round(f * 100);
+    el.querySelector('.value').style.strokeDashoffset = (47.12 * (1 - f)).toFixed(2);
+    el.querySelector('.vl-pct').textContent = `${pct}%`;
+    el.setAttribute('aria-valuenow', String(pct));
+  };
+  if (voice.running && s?.state === 'loading') {
+    clearTimeout(app.loadingHideTimer);
+    el.classList.remove('done');
+    el.hidden = false;
+    paint(loadingFraction(s.progress));
+    if (!app.loadingTicker) app.loadingTicker = setInterval(updateVoiceLoading, 120);
+    return;
+  }
+  clearInterval(app.loadingTicker);
+  app.loadingTicker = 0;
+  if (el.hidden || el.classList.contains('done')) return;
+  if (voice.running && s?.state === 'ready') {
+    // Finish the ring, then fade out.
+    paint(1);
+    el.classList.add('done');
+    app.loadingHideTimer = setTimeout(() => { el.hidden = true; el.classList.remove('done'); }, 700);
+  } else {
+    el.hidden = true;
+  }
 }
 
 /** The live microphone indicator: shown (and animated) only while listening in the expanded island. */
@@ -931,6 +974,7 @@ async function init() {
   api.on('shortcuts:status', (status) => { app.shortcutStatus = status; });
   api.on('speech:status', (status) => {
     app.speechStatus = status;
+    updateVoiceLoading();
     if (status.state === 'error' && voice.running) onVoiceStatus('error', status.message, { kind: 'engine' });
   });
   api.on('speech:crashed', () => {

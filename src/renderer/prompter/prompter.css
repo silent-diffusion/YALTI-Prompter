@@ -384,6 +384,45 @@ body.style-floating #mic-meter {
   right: max(14px, calc(var(--corner) * 0.42));
 }
 
+/* ---------- Speech model loading (beside the microphone indicator) ---------- */
+
+#voice-loading {
+  position: absolute;
+  top: 12px;
+  right: 52px; /* beside the 30 px microphone indicator */
+  z-index: 3;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px 0 8px;
+  border-radius: 999px;
+  font: 600 12px 'Inter Variable', system-ui, sans-serif;
+  color: rgba(255, 255, 255, 0.9);
+  background: #1c1c1f;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 6px 18px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transition: opacity .5s ease;
+}
+#voice-loading[hidden] { display: none; }
+#mic-meter[hidden] ~ #voice-loading { right: 14px; }
+#voice-loading.done { opacity: 0; }
+#voice-loading svg { width: 18px; height: 18px; transform: rotate(-90deg); flex: 0 0 auto; }
+#voice-loading circle { fill: none; stroke-width: 2.6; }
+#voice-loading .track { stroke: rgba(255, 255, 255, 0.16); }
+#voice-loading .value {
+  stroke: var(--hl);
+  stroke-linecap: round;
+  stroke-dasharray: 47.12;
+  stroke-dashoffset: 47.12;
+  transition: stroke-dashoffset .25s linear;
+}
+#voice-loading .vl-pct { color: rgba(255, 255, 255, 0.6); min-width: 3.2ch; text-align: right; }
+body.style-floating #voice-loading { top: max(12px, calc(var(--corner) * 0.36)); right: calc(max(14px, calc(var(--corner) * 0.42)) + 38px); }
+body.style-floating #mic-meter[hidden] ~ #voice-loading { right: max(14px, calc(var(--corner) * 0.42)); }
+
 /* ---------- Hints, countdown, help, empty state ---------- */
 
 #hint {
@@ -572,7 +611,7 @@ body.auto-playing #compact-dot { background: var(--hl); }
 body.drop-target #drop-overlay { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
-  .w, #controls, #hint, #expanded, #compact, #jump-back { transition: none !important; }
+  .w, #controls, #hint, #expanded, #compact, #jump-back, #voice-loading, #voice-loading .value { transition: none !important; }
   /* A still microphone whose glow follows the level, instead of moving bars. */
   #mic-meter .bar { display: none; }
   #mic-meter .glyph { display: block; }
