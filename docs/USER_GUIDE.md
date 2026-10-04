@@ -106,6 +106,12 @@ YALTI is built for real speaking, not perfect reading:
   a small “Listening for your script…” note appears and the reading marker gently pulses.
 - **Coming back somewhere else** — start reading any part of the script and YALTI finds it, usually
   within five to ten words. It prefers nearby text and only jumps far when it is sure.
+- **Jumping back** — when YALTI moves your place a long way, a small *Back to “…”* button appears
+  at the top of the island for a few seconds, showing the first words of where you were. Click it
+  (or press **Backspace**, or `Ctrl+Alt+Backspace` from anywhere) to return; it then offers
+  *Return to “…”* in case the jump was right after all. It only appears for real jumps: never for
+  the next line, and for a skip of two or three lines only once your old place has scrolled out of
+  view. Scrolling by hand dismisses it.
 
 If you scroll by hand while listening, YALTI continues from wherever you scrolled to.
 
@@ -166,6 +172,7 @@ Press **?** in the prompter to see them all.
 | Line back / forward | `↑` / `↓` | `Ctrl+Alt+PgUp` / `Ctrl+Alt+PgDn` |
 | Page back / forward | `PgUp` / `PgDn` | |
 | Back to the start / end | `Home` / `End` | `Ctrl+Alt+Home` |
+| Jump back after a jump (press again to return) | `Backspace` | `Ctrl+Alt+Backspace` |
 | Slower / faster | `[` / `]` | `Ctrl+Alt+-` / `Ctrl+Alt+=` |
 | Text size | `Ctrl` `+` / `Ctrl` `−` | |
 | Open / paste / edit / reload | `Ctrl+O` / `Ctrl+V` / `Ctrl+E` / `Ctrl+R` | |

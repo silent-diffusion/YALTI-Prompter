@@ -392,7 +392,7 @@ function renderShortcuts() {
     });
     return row(a.label, null, h('span', { class: 'control' }, dot, btn));
   });
-  const local = [['Start / pause', 'Space'], ['Voice tracking on / off', 'M'], ['Scroll a line / a page', '↑ ↓ · PgUp PgDn'], ['Back to the start / end', 'Home · End'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open · Paste · Edit · Reload', 'Ctrl+O · Ctrl+V · Ctrl+E · Ctrl+R'], ['Settings', 'Ctrl+,'], ['Collapse · Hide', 'Esc · H'], ['All shortcuts', '?']];
+  const local = [['Start / pause', 'Space'], ['Voice tracking on / off', 'M'], ['Scroll a line / a page', '↑ ↓ · PgUp PgDn'], ['Back to the start / end', 'Home · End'], ['Jump back after a jump', 'Backspace'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open · Paste · Edit · Reload', 'Ctrl+O · Ctrl+V · Ctrl+E · Ctrl+R'], ['Settings', 'Ctrl+,'], ['Collapse · Hide', 'Esc · H'], ['All shortcuts', '?']];
   return [
     h('h1', {}, 'Shortcuts'),
     h('p', { class: 'lede' }, 'Global shortcuts work even while another app — your slides or a video call — has focus. Click a shortcut to record a new one; press Backspace to clear it.'),
@@ -414,7 +414,8 @@ function recordShortcut(id, btn) {
     window.removeEventListener('keydown', onKey, true);
     btn.classList.remove('recording');
     if (e.key === 'Escape') { btn.textContent = S.shortcuts[id] || 'Not set'; return; }
-    if (e.key === 'Backspace' || e.key === 'Delete') { set({ shortcuts: { ...S.shortcuts, [id]: '' } }); return; }
+    const bare = !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey;
+    if (bare && (e.key === 'Backspace' || e.key === 'Delete')) { set({ shortcuts: { ...S.shortcuts, [id]: '' } }); return; }
     const key = acceleratorKey(e);
     const mods = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Super'].filter(Boolean);
     if (!key || (!mods.length && !/^F\d+$|^Media/.test(key))) { btn.textContent = 'Use a modifier (Ctrl, Alt…)'; setTimeout(() => { btn.textContent = S.shortcuts[id] || 'Not set'; }, 1600); return; }
@@ -431,7 +432,7 @@ function acceleratorKey(e) {
   if (/^Numpad\d$/.test(code)) return `num${code.slice(6)}`;
   const map = {
     Space: 'Space', Enter: 'Enter', Tab: 'Tab', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
-    PageUp: 'PageUp', PageDown: 'PageDown', Home: 'Home', End: 'End', Insert: 'Insert', Minus: '-', Equal: '=',
+    PageUp: 'PageUp', PageDown: 'PageDown', Home: 'Home', End: 'End', Insert: 'Insert', Backspace: 'Backspace', Delete: 'Delete', Minus: '-', Equal: '=',
     BracketLeft: '[', BracketRight: ']', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/', Backslash: '\\',
     Backquote: '`', NumpadAdd: 'numadd', NumpadSubtract: 'numsub', NumpadMultiply: 'nummult', NumpadDivide: 'numdiv',
     NumpadDecimal: 'numdec', NumpadEnter: 'Enter', MediaPlayPause: 'MediaPlayPause', MediaTrackNext: 'MediaNextTrack',

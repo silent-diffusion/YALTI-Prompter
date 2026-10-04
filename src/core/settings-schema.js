@@ -23,6 +23,7 @@ export const SHORTCUT_ACTIONS = [
   { id: 'faster', label: 'Faster auto-scroll', default: 'Ctrl+Alt+=' },
   { id: 'slower', label: 'Slower auto-scroll', default: 'Ctrl+Alt+-' },
   { id: 'restart', label: 'Back to the start', default: 'Ctrl+Alt+Home' },
+  { id: 'jumpBack', label: 'Jump back after a jump', default: 'Ctrl+Alt+Backspace' },
 ];
 
 /**

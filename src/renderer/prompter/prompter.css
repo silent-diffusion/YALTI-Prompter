@@ -299,6 +299,38 @@ body.controls-visible #progress-bar { opacity: 0; }
 body.controls-visible .grip-mark path { opacity: 0.6; }
 body .grip-mark.hot path { opacity: 1; stroke: var(--hl); }
 
+/* ---------- Jump back (after voice tracking moved a long way) ---------- */
+
+#jump-back {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 3;
+  max-width: min(420px, calc(100% - 120px));
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px 5px 9px;
+  border: 0;
+  border-radius: 999px;
+  font: 600 12.5px 'Inter Variable', system-ui, sans-serif;
+  color: rgba(255, 255, 255, 0.9);
+  background: #1c1c1f;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--hl) 35%, transparent), 0 6px 18px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0;
+  transform: translate(-50%, -6px);
+  transition: opacity .3s ease, transform .35s var(--ease), background-color .18s ease;
+  pointer-events: none;
+}
+#jump-back.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#jump-back:hover { background: #26262a; }
+#jump-back:focus-visible { outline: 2px solid var(--hl); outline-offset: 2px; }
+#jump-back .jb-icon { color: var(--hl); display: flex; }
+#jump-back .jb-text { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#jump-back kbd { font-size: 11px; padding: 1px 5px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); }
+
 /* ---------- Microphone indicator ---------- */
 
 #mic-meter {
@@ -540,7 +572,7 @@ body.auto-playing #compact-dot { background: var(--hl); }
 body.drop-target #drop-overlay { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
-  .w, #controls, #hint, #expanded, #compact { transition: none !important; }
+  .w, #controls, #hint, #expanded, #compact, #jump-back { transition: none !important; }
   /* A still microphone whose glow follows the level, instead of moving bars. */
   #mic-meter .bar { display: none; }
   #mic-meter .glyph { display: block; }

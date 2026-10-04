@@ -22,7 +22,7 @@ completely different part of the script — it finds your place again.
 
 ## Features
 
-- **Follows your voice.** Local, open-source speech recognition ([sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)) tracks where you are in the script. It handles skipped sentences, repeats, paraphrasing, long pauses, going off-script and resuming elsewhere, and only moves when it is confident.
+- **Follows your voice.** Local, open-source speech recognition ([sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)) tracks where you are in the script. It handles skipped sentences, repeats, paraphrasing, long pauses, going off-script and resuming elsewhere, and only moves when it is confident. If it ever jumps somewhere you didn't mean, one click (or Backspace) takes you back.
 - **A liquid island, not a window.** The prompter emerges from the top edge, expands, folds into a compact pill and retracts into the bezel with one continuous, spring-driven motion. Choose *Liquid*, *Flush* or *Floating* styles and tune the intensity.
 - **Readable everywhere.** Nine bundled open-source fonts, adjustable size, weight, line and letter spacing, alignment, colors, highlight color, background opacity and reading-line position. Mirror mode for beam-splitter glass.
 - **Scripts the way you write them.** Open `.txt`, `.md` (rendered cleanly — no Markdown symbols), `.srt` and `.vtt` files; paste from the clipboard; drop a file — or text highlighted in any app — on the island or in Settings; or write in the built-in editor. Files reload automatically when you save them elsewhere, and YALTI remembers where you were in each script. Text in `[square brackets]` becomes a quiet stage direction that is never tracked.
@@ -79,6 +79,7 @@ Hover over the island to reveal the controls. Press **?** for every shortcut.
 | Scroll a line / a page | `↑` `↓` / `PgUp` `PgDn` | `Ctrl+Alt+PgUp` / `Ctrl+Alt+PgDn` |
 | Slower / faster auto-scroll | `[` / `]` | `Ctrl+Alt+-` / `Ctrl+Alt+=` |
 | Back to the start / end | `Home` / `End` | `Ctrl+Alt+Home` |
+| Jump back after voice tracking jumps | `Backspace` | `Ctrl+Alt+Backspace` |
 | Text size | `Ctrl` `+` / `Ctrl` `−` | |
 | Open · Paste · Edit · Reload script | `Ctrl+O` · `Ctrl+V` · `Ctrl+E` · `Ctrl+R` | |
 | Settings | `Ctrl+,` | |

@@ -11,6 +11,7 @@ import { fontById } from '../../core/settings-schema.js';
 import { describeDuration, SPEAKING_WPM } from '../../core/text.js';
 import { Animator } from '../../core/spring.js';
 import { cornerGrip } from '../../core/island-shape.js';
+import { jumpSnippet, shouldOfferJumpBack } from '../../core/jump-back.js';
 import { icon } from '../shared/icons.js';
 import { dropKind, openDropped } from '../shared/drop.js';
 
@@ -40,6 +41,8 @@ const app = {
   controlsTimer: null,
   saveTimer: null,
   countdownTimer: null,
+  jumpBack: null, // { anchor, position, returning } — where "jump back" goes
+  jumpBackTimer: null,
 };
 
 const island = new Island({
@@ -168,6 +171,7 @@ function relayoutWhenFontsReady() {
 /* ------------------------------------------------------------------ */
 
 function loadScript(script) {
+  setJumpBack(null);
   const prevWord = view.anchorWord;
   const prevModel = app.model;
   app.script = script;
@@ -250,6 +254,7 @@ function rememberPositionSoon() {
 
 function onSpeechResult(type, text) {
   if (!app.model) return;
+  const before = { anchor: view.anchorWord, position: tracker.position };
   const res = tracker.pushResult(text, type === 'final');
   setTrackState(res.state);
   if (res.moved && res.position >= 0) {
@@ -261,7 +266,68 @@ function onSpeechResult(type, text) {
     scroller.kick();
     updateProgress();
     rememberPositionSoon();
+    considerJumpBack(before, next, res.jumped);
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Jump back                                                           */
+/* ------------------------------------------------------------------ */
+
+/** After a big move by voice tracking, offer a way back to where the reader was. */
+function considerJumpBack(from, toAnchor, jumped) {
+  const fromLine = view.lineOfWord(from.anchor);
+  const toLine = view.lineOfWord(toAnchor);
+  if (!fromLine || !toLine) return;
+  const offer = shouldOfferJumpBack({
+    fromWord: from.anchor,
+    toWord: toAnchor,
+    lineDelta: view.wordLine[toAnchor] - view.wordLine[from.anchor],
+    fromY: view.readingY + (fromLine.center - toLine.center),
+    viewportHeight: view.viewportHeight,
+    jumped,
+  });
+  if (offer) setJumpBack({ ...from, returning: false });
+}
+
+function setJumpBack(target) {
+  app.jumpBack = target;
+  const el = $('#jump-back');
+  if (!target || !app.model) {
+    clearTimeout(app.jumpBackTimer);
+    el.classList.remove('show');
+    return;
+  }
+  const up = target.anchor < view.anchorWord;
+  const where = jumpSnippet(app.model.words, target.anchor);
+  el.querySelector('.jb-icon').innerHTML = icon(up ? 'chevron-up' : 'chevron-down', 15);
+  el.querySelector('.jb-text').textContent = `${target.returning ? 'Return to' : 'Back to'} “${where}”`;
+  el.title = `${target.returning ? 'Return to where voice tracking had moved' : 'Go back to where you were before voice tracking moved'} (Backspace)`;
+  el.classList.add('show');
+  hideJumpBackSoon(9000);
+}
+
+function hideJumpBackSoon(ms) {
+  clearTimeout(app.jumpBackTimer);
+  app.jumpBackTimer = setTimeout(() => {
+    if (!$('#jump-back').matches(':hover')) $('#jump-back').classList.remove('show');
+  }, ms);
+}
+
+/** Go back to where the reader was before the last big move (and offer the way forward again). */
+function jumpBack() {
+  const t = app.jumpBack;
+  if (!t || !app.model || !view.wordCount) return;
+  const here = { anchor: view.anchorWord, position: tracker.position };
+  view.jumpToWord(t.anchor);
+  scroller.kick();
+  tracker.setPosition(t.position);
+  if (voice.running) voice.reset(); // words heard at the other place must not pull us back there
+  if (voice.running && t.position >= 0 && app.settings.scrollMode === 'voice') view.markSpoken(app.model.tokens[t.position].word);
+  else requestAnimationFrame(() => refreshMarksForManual());
+  updateProgress();
+  rememberPositionSoon();
+  setJumpBack({ ...here, returning: !t.returning });
 }
 
 function nextReadableWord(word) {
@@ -432,6 +498,7 @@ async function toggleVoiceMode() {
 }
 
 function manualMove(fn) {
+  setJumpBack(null); // moving by hand takes over from the last jump
   fn();
   scroller.kick();
   if (voice.running) {
@@ -517,6 +584,7 @@ function command(name, arg) {
     case 'faster': changeSpeed(1.12); break;
     case 'slower': changeSpeed(1 / 1.12); break;
     case 'restart': restart(); break;
+    case 'jumpBack': jumpBack(); break;
     default:
   }
 }
@@ -632,7 +700,7 @@ function reportState() {
 function buildHelp() {
   const rows = [
     ['Start / pause', 'Space'], ['Voice tracking on / off', 'M'], ['Scroll a line', '↑ ↓'], ['Scroll a page', 'PgUp PgDn'],
-    ['Back to the start / end', 'Home End'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open script', 'Ctrl+O'],
+    ['Back to the start / end', 'Home End'], ['Jump back after a jump', 'Backspace'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open script', 'Ctrl+O'],
     ['Paste script', 'Ctrl+V'], ['Edit script', 'Ctrl+E'], ['Reload script', 'Ctrl+R'], ['Settings', 'Ctrl+,'],
     ['Collapse', 'Esc'], ['Hide', 'H'], ['This help', '?'],
   ];
@@ -683,6 +751,7 @@ function onKey(e) {
     case 'PageDown': manualMove(() => view.pageBy(1)); return done();
     case 'PageUp': manualMove(() => view.pageBy(-1)); return done();
     case 'Home': restart(); return done();
+    case 'Backspace': if (app.jumpBack) { jumpBack(); return done(); } return;
     case 'End': manualMove(() => view.jumpToWord(view.wordCount - 1)); return done();
     case ']': changeSpeed(1.12); return done();
     case '[': changeSpeed(1 / 1.12); return done();
@@ -812,6 +881,10 @@ function setupPointer() {
     const res = await openDropped(api, e.dataTransfer);
     if (res.message && !res.notified) toast(res.message, 'error');
   });
+
+  const jb = $('#jump-back');
+  jb.addEventListener('click', (e) => { e.stopPropagation(); jumpBack(); });
+  jb.addEventListener('mouseleave', () => { if (jb.classList.contains('show')) hideJumpBackSoon(2500); });
 
   $('#mic-meter').addEventListener('click', (e) => {
     e.stopPropagation();

@@ -119,6 +119,11 @@ prompter.
   somewhere else.
 - **Manual scrolling** resets the tracker to the new place and clears the heard words, so they
   cannot pull the prompter back.
+- **Jump back** (`src/core/jump-back.js`): after a move the prompter decides whether to offer a
+  way back. Moves under two lines or six words never are; tracker jumps (`jumped`) and moves of
+  four or more lines always are; two- or three-line moves only when the old reading line has left
+  the visible part of the viewport. Going back restores both the view and the tracker position
+  and clears the heard words.
 
 The *Cautious*, *Balanced* and *Responsive* presets scale these thresholds. *Find my place anywhere*
 disables global jumps.
