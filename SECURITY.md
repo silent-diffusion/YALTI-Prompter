@@ -14,8 +14,12 @@ Only the latest release receives security fixes.
 - Speech recognition runs locally in a separate process. Audio is held in memory only for
   recognition and is never stored or transmitted.
 - Scripts are read from disk and never uploaded.
-- The app makes no network requests during normal use: no telemetry, analytics, crash reporting,
-  update checks or accounts.
+- The app makes no network requests during normal use: no telemetry, analytics, crash reporting or
+  accounts. The one exception is updating, which only happens when the user checks for updates
+  or turns on automatic updates (off by default): the app asks the GitHub API for the latest
+  release of this repository and downloads its files from `github.com/<repo>/releases/download/`
+  only. A download is used only if its SHA-256 matches the release's `SHA256SUMS.txt` (or the
+  SHA-512 in electron-builder's `latest.yml`); releases without checksums are refused.
 - Settings, recent file paths and reading positions are stored in plain JSON in the user's
   application-data folder (or next to the portable app).
 

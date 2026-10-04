@@ -2,9 +2,9 @@
 
 'use strict';
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
-const EVENTS = new Set(['settings:changed', 'script:loaded', 'shortcuts:status', 'speech:status', 'panel:section']);
+const EVENTS = new Set(['settings:changed', 'script:loaded', 'shortcuts:status', 'speech:status', 'panel:section', 'update:status']);
 
 contextBridge.exposeInMainWorld('yalti', {
   initial: () => ipcRenderer.invoke('app:initial'),
@@ -17,11 +17,22 @@ contextBridge.exposeInMainWorld('yalti', {
 
   currentScript: () => ipcRenderer.invoke('script:current'),
   openScriptDialog: () => ipcRenderer.invoke('script:open-dialog'),
+  openScriptPath: (path) => ipcRenderer.invoke('script:open-path', path),
+  openScriptText: (text, name) => ipcRenderer.invoke('script:open-text', { text, name }),
+  pathForFile: (file) => {
+    try { return webUtils.getPathForFile(file); } catch { return ''; }
+  },
   applyScript: (text) => ipcRenderer.invoke('script:apply', text),
   saveScript: (text, saveAs) => ipcRenderer.invoke('script:save', { text, saveAs }),
   reloadScript: () => ipcRenderer.invoke('script:reload'),
   pasteScript: () => ipcRenderer.invoke('script:paste'),
   openSample: () => ipcRenderer.invoke('script:sample'),
+
+  updateStatus: () => ipcRenderer.invoke('update:status'),
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  cancelUpdate: () => ipcRenderer.invoke('update:cancel'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
 
   command: (name, arg) => ipcRenderer.send('command', name, arg),
   openPanel: (name, section) => ipcRenderer.invoke('panel:open', name, section),

@@ -22,13 +22,14 @@ completely different part of the script — it finds your place again.
 
 ## Features
 
-- **Follows your voice.** Local, open-source speech recognition ([sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)) tracks where you are in the script. It handles skipped sentences, repeats, paraphrasing, long pauses, going off-script and resuming elsewhere, and only moves when it is confident.
+- **Follows your voice.** Local, open-source speech recognition ([sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)) tracks where you are in the script. It handles skipped sentences, repeats, paraphrasing, long pauses, going off-script and resuming elsewhere, and only moves when it is confident. If it ever jumps somewhere you didn't mean, one click (or Backspace) takes you back.
 - **A liquid island, not a window.** The prompter emerges from the top edge, expands, folds into a compact pill and retracts into the bezel with one continuous, spring-driven motion. Choose *Liquid*, *Flush* or *Floating* styles and tune the intensity.
 - **Readable everywhere.** Nine bundled open-source fonts, adjustable size, weight, line and letter spacing, alignment, colors, highlight color, background opacity and reading-line position. Mirror mode for beam-splitter glass.
-- **Scripts the way you write them.** Open `.txt`, `.md` (rendered cleanly — no Markdown symbols), `.srt` and `.vtt` files; paste from the clipboard; drop a file on the island; or write in the built-in editor. Files reload automatically when you save them elsewhere, and YALTI remembers where you were in each script. Text in `[square brackets]` becomes a quiet stage direction that is never tracked.
+- **Scripts the way you write them.** Open `.txt`, `.md` (rendered cleanly — no Markdown symbols), `.srt` and `.vtt` files; paste from the clipboard; drop a file — or text highlighted in any app — on the island or in Settings; or write in the built-in editor. Files reload automatically when you save them elsewhere, and YALTI remembers where you were in each script. Text in `[square brackets]` becomes a quiet stage direction that is never tracked.
 - **Auto-scroll and manual control** whenever you prefer: adjustable speed, optional countdown, mouse wheel, keys, or drag the text.
 - **Out of your way.** Transparent areas click through to the apps beneath. Always-on-top (even over full-screen slides), system-tray access, and global shortcuts that work while another app has focus.
-- **Private by design.** No accounts, no cloud, no telemetry, no recordings. Scripts and audio never leave your computer, and it works fully offline.
+- **Private by design.** No accounts, no cloud, no telemetry, no recordings. Scripts and audio never leave your computer, and it works fully offline. The only time it goes online is to check GitHub for updates — when you ask it to, or if you turn on automatic updates.
+- **Keeps itself up to date** — if you want. *Settings → Updates* checks GitHub for a new version, downloads it, verifies it against the release's published checksums and installs it. Automatic updates install when you quit, never in the middle of a talk.
 - **Open source throughout** — code (MIT), speech engine and model (Apache-2.0), fonts (OFL), icons (ISC). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## A closer look
@@ -58,12 +59,16 @@ Requirements: Windows 10 or 11 (64-bit) and a microphone for voice tracking.
 > “Windows protected your PC”. Choose **More info → Run anyway**. You can verify a download
 > against the SHA-256 checksums published with each release.
 
+**Update** from *Settings → Updates* (or *Check for updates…* in the tray menu), or turn on automatic updates there.
+Running a newer installer over an existing installation also works: it notices YALTI is already
+installed and offers to update it, to check for updates, or to uninstall.
+
 **Uninstall** from *Settings → Apps → Installed apps → YALTI Prompter*, or with the uninstaller in the Start menu. Your settings stay in `%APPDATA%\YALTI Prompter` unless you delete that folder.
 
 ## Quick start
 
 1. **Launch YALTI Prompter.** The island flows out of the top of your screen with a short welcome script.
-2. **Open your script** with **Ctrl+O**, paste one with **Ctrl+V**, or drop a `.txt` / `.md` file on the island.
+2. **Open your script** with **Ctrl+O**, paste one with **Ctrl+V**, or drop a `.txt` / `.md` file — or highlighted text — on the island.
 3. **Press Space** (or the microphone button) and start reading aloud. YALTI follows along.
 
 Hover over the island to reveal the controls. Press **?** for every shortcut.
@@ -78,13 +83,14 @@ Hover over the island to reveal the controls. Press **?** for every shortcut.
 | Expand / collapse | `Enter` / `Esc` | `Ctrl+Alt+Enter` |
 | Scroll a line / a page | `↑` `↓` / `PgUp` `PgDn` | `Ctrl+Alt+PgUp` / `Ctrl+Alt+PgDn` |
 | Slower / faster auto-scroll | `[` / `]` | `Ctrl+Alt+-` / `Ctrl+Alt+=` |
-| Back to the start | `Home` | `Ctrl+Alt+Home` |
+| Back to the start / end | `Home` / `End` | `Ctrl+Alt+Home` |
+| Jump back after voice tracking jumps | `Backspace` | `Ctrl+Alt+Backspace` |
 | Text size | `Ctrl` `+` / `Ctrl` `−` | |
 | Open · Paste · Edit · Reload script | `Ctrl+O` · `Ctrl+V` · `Ctrl+E` · `Ctrl+R` | |
 | Settings | `Ctrl+,` | |
 
 Global shortcuts can be changed or turned off in *Settings → Shortcuts*. Drag the island
-sideways to move it along the top edge; drag its bottom-right corner to resize it.
+sideways to move it along the top edge; drag either bottom corner to resize it.
 
 The full guide is in [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 

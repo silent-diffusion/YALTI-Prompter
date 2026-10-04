@@ -4,12 +4,16 @@
 import { Island } from './island.js';
 import { ScriptView } from './script-view.js';
 import { VoiceInput } from './voice.js';
+import { MicMeter } from './mic-meter.js';
 import { buildModel } from '../../core/document.js';
 import { SpeechTracker } from '../../core/tracker.js';
 import { fontById } from '../../core/settings-schema.js';
-import { SPEAKING_WPM } from '../../core/text.js';
+import { describeDuration, SPEAKING_WPM } from '../../core/text.js';
 import { Animator } from '../../core/spring.js';
+import { cornerGrip } from '../../core/island-shape.js';
+import { jumpSnippet, shouldOfferJumpBack } from '../../core/jump-back.js';
 import { icon } from '../shared/icons.js';
+import { dropKind, openDropped } from '../shared/drop.js';
 
 const api = window.yalti;
 const $ = (sel) => document.querySelector(sel);
@@ -37,6 +41,8 @@ const app = {
   controlsTimer: null,
   saveTimer: null,
   countdownTimer: null,
+  jumpBack: null, // { anchor, position, returning } — where "jump back" goes
+  jumpBackTimer: null,
 };
 
 const island = new Island({
@@ -71,6 +77,8 @@ const voice = new VoiceInput({
   onStatus: onVoiceStatus,
 });
 
+const micMeter = new MicMeter($('#mic-meter'), voice);
+
 /* ------------------------------------------------------------------ */
 /* Settings                                                            */
 /* ------------------------------------------------------------------ */
@@ -95,6 +103,7 @@ function applySettings(s, changed = null) {
   root.setProperty('--align', s.textAlign);
   root.setProperty('--read-opacity', String(s.readTextOpacity));
   root.setProperty('--pad-x', `${Math.round(Math.max(28, Math.min(64, s.width * 0.05)))}px`);
+  root.setProperty('--corner', `${s.cornerRadius}px`);
 
   body.classList.toggle('shadow', s.shadow);
   body.classList.toggle('mirror', s.mirror);
@@ -102,8 +111,10 @@ function applySettings(s, changed = null) {
   body.classList.toggle('hl-spoken', s.highlightSpoken);
   body.classList.toggle('marker', s.showReadingMarker);
   body.classList.toggle('show-progress', s.showProgress);
+  body.classList.toggle('style-floating', s.bezelStyle === 'floating');
 
   island.setLook({ style: s.bezelStyle, intensity: s.bezelIntensity, radius: s.cornerRadius });
+  if (has('cornerRadius')) shapeGrips(s.cornerRadius);
   view.setSmoothness(s.scrollSmoothness);
   if (has('readingLine')) view.setReadingLine(s.readingLine);
   if (has('mirror')) view.setMirror(s.mirror);
@@ -120,8 +131,23 @@ function applySettings(s, changed = null) {
     startVoice();
   }
   if (has('highlightSpoken', 'dimReadText', 'scrollMode') && !all) refreshMarks();
+  if (has('showMicIndicator') && !all) updateMicMeter();
   renderControls();
   updateProgress();
+}
+
+/** Fit the corner resize grips to the island's corner radius. */
+function shapeGrips(radius) {
+  const { size, clip, grip } = cornerGrip({ r: radius });
+  for (const el of document.querySelectorAll('.resize-grip, .grip-mark')) {
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
+  }
+  for (const el of document.querySelectorAll('.resize-grip')) el.style.clipPath = `path('${clip}')`;
+  for (const el of document.querySelectorAll('.grip-mark')) {
+    el.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    el.querySelector('path').setAttribute('d', grip);
+  }
 }
 
 let relayoutQueued = false;
@@ -145,6 +171,7 @@ function relayoutWhenFontsReady() {
 /* ------------------------------------------------------------------ */
 
 function loadScript(script) {
+  setJumpBack(null);
   const prevWord = view.anchorWord;
   const prevModel = app.model;
   app.script = script;
@@ -227,6 +254,7 @@ function rememberPositionSoon() {
 
 function onSpeechResult(type, text) {
   if (!app.model) return;
+  const before = { anchor: view.anchorWord, position: tracker.position };
   const res = tracker.pushResult(text, type === 'final');
   setTrackState(res.state);
   if (res.moved && res.position >= 0) {
@@ -238,7 +266,71 @@ function onSpeechResult(type, text) {
     scroller.kick();
     updateProgress();
     rememberPositionSoon();
+    considerJumpBack(before, next, res.jumped);
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Jump back                                                           */
+/* ------------------------------------------------------------------ */
+
+/** After a big move by voice tracking, offer a way back to where the reader was. */
+function considerJumpBack(from, toAnchor, jumped) {
+  const fromLine = view.lineOfWord(from.anchor);
+  const toLine = view.lineOfWord(toAnchor);
+  if (!fromLine || !toLine) return;
+  const offer = shouldOfferJumpBack({
+    // Before the first heard words there is no place to go back to: finding the
+    // reader the first time is not a jump.
+    fromWord: from.position >= 0 ? from.anchor : -1,
+    toWord: toAnchor,
+    lineDelta: view.wordLine[toAnchor] - view.wordLine[from.anchor],
+    fromY: view.readingY + (fromLine.center - toLine.center),
+    viewportHeight: view.viewportHeight,
+    jumped,
+  });
+  if (offer) setJumpBack({ ...from, returning: false });
+}
+
+function setJumpBack(target) {
+  app.jumpBack = target;
+  const el = $('#jump-back');
+  if (!target || !app.model) {
+    clearTimeout(app.jumpBackTimer);
+    el.classList.remove('show');
+    return;
+  }
+  const up = target.anchor < view.anchorWord;
+  const where = jumpSnippet(app.model.words, target.anchor);
+  el.querySelector('.jb-icon').innerHTML = icon(up ? 'chevron-up' : 'chevron-down', 15);
+  el.querySelector('.jb-text').textContent = `${target.returning ? 'Return to' : 'Back to'} “${where}”`;
+  el.title = `${target.returning ? 'Return to where voice tracking had moved' : 'Go back to where you were before voice tracking moved'} (Backspace)`;
+  el.classList.add('show');
+  hideJumpBackSoon(12000);
+}
+
+/** The offer (button and Backspace) lasts while the button is shown; hovering keeps it. */
+function hideJumpBackSoon(ms) {
+  clearTimeout(app.jumpBackTimer);
+  app.jumpBackTimer = setTimeout(() => {
+    if (!$('#jump-back').matches(':hover')) setJumpBack(null);
+  }, ms);
+}
+
+/** Go back to where the reader was before the last big move (and offer the way forward again). */
+function jumpBack() {
+  const t = app.jumpBack;
+  if (!t || !app.model || !view.wordCount) return;
+  const here = { anchor: view.anchorWord, position: tracker.position };
+  view.jumpToWord(t.anchor);
+  scroller.kick();
+  tracker.setPosition(t.position);
+  if (voice.running) voice.reset(); // words heard at the other place must not pull us back there
+  if (voice.running && t.position >= 0 && app.settings.scrollMode === 'voice') view.markSpoken(app.model.tokens[t.position].word);
+  else requestAnimationFrame(() => refreshMarksForManual());
+  updateProgress();
+  rememberPositionSoon();
+  setJumpBack({ ...here, returning: !t.returning });
 }
 
 function nextReadableWord(word) {
@@ -293,6 +385,19 @@ function updateVoiceClasses() {
   body.classList.toggle('voice-searching', listening && app.trackState === 'searching');
   body.classList.toggle('voice-error', app.voiceState === 'error');
   updateCompactLabel();
+  updateMicMeter();
+}
+
+/** The live microphone indicator: shown (and animated) only while listening in the expanded island. */
+function updateMicMeter() {
+  const el = $('#mic-meter');
+  const on = voice.running && !!app.settings?.showMicIndicator;
+  el.hidden = !on;
+  el.dataset.state = app.voiceState !== 'listening' ? 'loading' : app.trackState === 'searching' ? 'searching' : 'listening';
+  el.title = el.dataset.state === 'searching' ? 'Listening — waiting for words from your script. Click to stop.'
+    : el.dataset.state === 'loading' ? 'Starting the microphone… Click to stop.' : 'Listening — click to stop';
+  if (on && app.visibility === 'expanded') micMeter.start();
+  else micMeter.stop();
 }
 
 async function startVoice() {
@@ -396,6 +501,7 @@ async function toggleVoiceMode() {
 }
 
 function manualMove(fn) {
+  setJumpBack(null); // moving by hand takes over from the last jump
   fn();
   scroller.kick();
   if (voice.running) {
@@ -441,6 +547,7 @@ function setVisibility(mode) {
   if (mode !== 'expanded') { body.classList.remove('controls-visible'); $('#help').hidden = true; }
   island.setMode(mode);
   updateCompactLabel();
+  updateMicMeter();
   reportState();
 }
 
@@ -469,13 +576,18 @@ function command(name, arg) {
     case 'toggleVoice': toggleVoiceMode(); break;
     case 'setMode':
       if (arg === 'auto') { if (voice.running) stopVoice(); api.updateSettings({ scrollMode: 'auto' }); }
-      else if (arg === 'voice' && !voice.running) startVoice();
+      else if (arg === 'voice' && app.settings.scrollMode !== 'voice') {
+        // Choosing the mode doesn't open the microphone; Space starts listening.
+        api.updateSettings({ scrollMode: 'voice' });
+        hint('Voice tracking selected — press Space to start listening', { ms: 2400 });
+      }
       break;
     case 'lineBack': manualMove(() => view.nudgeLines(-1)); break;
     case 'lineForward': manualMove(() => view.nudgeLines(1)); break;
     case 'faster': changeSpeed(1.12); break;
     case 'slower': changeSpeed(1 / 1.12); break;
     case 'restart': restart(); break;
+    case 'jumpBack': jumpBack(); break;
     default:
   }
 }
@@ -529,8 +641,7 @@ function updateProgress() {
   } else {
     minutes = Math.max(0, n - word) / SPEAKING_WPM;
   }
-  const left = minutes < 1 ? 'under a minute left' : `about ${Math.round(minutes)} min left`;
-  $('#progress-text').textContent = `${Math.round(p * 100)}% · ${left}`;
+  $('#progress-text').textContent = `${Math.round(p * 100)}% · ${describeDuration(minutes)} left`;
 }
 
 function updateCompactLabel() {
@@ -592,7 +703,7 @@ function reportState() {
 function buildHelp() {
   const rows = [
     ['Start / pause', 'Space'], ['Voice tracking on / off', 'M'], ['Scroll a line', '↑ ↓'], ['Scroll a page', 'PgUp PgDn'],
-    ['Back to the start', 'Home'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open script', 'Ctrl+O'],
+    ['Back to the start / end', 'Home End'], ['Jump back after a jump', 'Backspace'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open script', 'Ctrl+O'],
     ['Paste script', 'Ctrl+V'], ['Edit script', 'Ctrl+E'], ['Reload script', 'Ctrl+R'], ['Settings', 'Ctrl+,'],
     ['Collapse', 'Esc'], ['Hide', 'H'], ['This help', '?'],
   ];
@@ -643,6 +754,7 @@ function onKey(e) {
     case 'PageDown': manualMove(() => view.pageBy(1)); return done();
     case 'PageUp': manualMove(() => view.pageBy(-1)); return done();
     case 'Home': restart(); return done();
+    case 'Backspace': if (app.jumpBack) { jumpBack(); return done(); } return;
     case 'End': manualMove(() => view.jumpToWord(view.wordCount - 1)); return done();
     case ']': changeSpeed(1.12); return done();
     case '[': changeSpeed(1 / 1.12); return done();
@@ -712,52 +824,74 @@ function setupPointer() {
   vp.addEventListener('pointercancel', endDrag);
   vp.addEventListener('dblclick', () => setVisibility('compact'));
 
-  // Resize from the corner handle.
-  const handle = $('#resize-handle');
+  // Resize from either bottom corner. The island stays centered, so the width
+  // changes by twice the horizontal drag.
   let rs = null;
-  handle.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    handle.setPointerCapture(e.pointerId);
-    island.capture(true);
-    rs = { sx: e.screenX, sy: e.screenY, w: island.size.w, h: island.size.h };
-    api.setResizing(true);
-  });
-  handle.addEventListener('pointermove', (e) => {
-    if (!rs) return;
-    const g = island.geo;
-    const w = Math.round(Math.max(360, Math.min(g.maxWidth || 2400, rs.w + 2 * (e.screenX - rs.sx))));
-    const h = Math.round(Math.max(120, Math.min(g.maxHeight || 1400, rs.h + (e.screenY - rs.sy))));
-    rs.nw = w; rs.nh = h;
-    island.setExpandedSize(w, h);
-  });
-  const endResize = async () => {
-    if (!rs) return;
-    const { nw, nh } = rs;
-    rs = null;
-    island.capture(false);
-    if (nw && nh) await api.updateSettings({ width: nw, height: nh });
-    api.setResizing(false);
-  };
-  handle.addEventListener('pointerup', endResize);
-  handle.addEventListener('pointercancel', endResize);
+  for (const grip of document.querySelectorAll('.resize-grip')) {
+    const sign = grip.dataset.corner === 'left' ? -1 : 1;
+    const mark = document.querySelector(`.grip-mark[data-corner="${grip.dataset.corner}"]`);
+    grip.addEventListener('pointerenter', () => mark.classList.add('hot'));
+    grip.addEventListener('pointerleave', () => { if (rs?.grip !== grip) mark.classList.remove('hot'); });
+    grip.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.stopPropagation();
+      grip.setPointerCapture(e.pointerId);
+      island.capture(true);
+      rs = { grip, sx: e.screenX, sy: e.screenY, w: island.size.w, h: island.size.h };
+      api.setResizing(true);
+    });
+    grip.addEventListener('pointermove', (e) => {
+      if (!rs || rs.grip !== grip) return;
+      const g = island.geo;
+      const w = Math.round(Math.max(360, Math.min(g.maxWidth || 2400, rs.w + 2 * sign * (e.screenX - rs.sx))));
+      const h = Math.round(Math.max(120, Math.min(g.maxHeight || 1400, rs.h + (e.screenY - rs.sy))));
+      if (w === rs.nw && h === rs.nh) return;
+      rs.nw = w; rs.nh = h;
+      island.setExpandedSize(w, h);
+      hint(`${w} × ${h}`, { ms: 900 });
+    });
+    const endResize = async () => {
+      if (!rs || rs.grip !== grip) return;
+      const { nw, nh } = rs;
+      rs = null;
+      if (!grip.matches(':hover')) mark.classList.remove('hot');
+      island.capture(false);
+      if (nw && nh) await api.updateSettings({ width: nw, height: nh });
+      api.setResizing(false);
+    };
+    grip.addEventListener('pointerup', endResize);
+    grip.addEventListener('pointercancel', endResize);
+  }
 
-  // Drop a file anywhere on the island to open it.
+  // Drop a file, or text highlighted in another app, anywhere on the island.
   document.addEventListener('dragover', (e) => {
-    if (![...(e.dataTransfer?.types || [])].includes('Files')) return;
+    const kind = dropKind(e.dataTransfer);
+    if (!kind) return;
     e.preventDefault();
-    body.classList.add('drop-target');
+    e.dataTransfer.dropEffect = 'copy';
+    if (!body.classList.contains('drop-target')) {
+      $('#drop-overlay').textContent = kind === 'file' ? 'Drop to open this script' : 'Drop to use this text as your script';
+      body.classList.add('drop-target');
+    }
     if (app.visibility === 'compact') setVisibility('expanded');
   });
   document.addEventListener('dragleave', (e) => {
     if (!e.relatedTarget) body.classList.remove('drop-target');
   });
-  document.addEventListener('drop', (e) => {
+  document.addEventListener('drop', async (e) => {
     e.preventDefault();
     body.classList.remove('drop-target');
-    const file = e.dataTransfer?.files?.[0];
-    if (!file) return;
-    const path = api.pathForFile(file);
-    if (path) api.openScriptPath(path);
+    const res = await openDropped(api, e.dataTransfer);
+    if (res.message && !res.notified) toast(res.message, 'error');
+  });
+
+  const jb = $('#jump-back');
+  jb.addEventListener('click', (e) => { e.stopPropagation(); jumpBack(); });
+  jb.addEventListener('mouseleave', () => { if (jb.classList.contains('show')) hideJumpBackSoon(2500); });
+
+  $('#mic-meter').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (voice.running) stopVoice();
   });
 
   $('#empty-state').addEventListener('click', (e) => {

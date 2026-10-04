@@ -83,6 +83,34 @@ function bottomCurve(x0, x1, y, bow) {
   return `C${r1(a)},${r1(y + bow)} ${r1(b)},${r1(y + bow)} ${r1(x1)},${r1(y)}`;
 }
 
+/**
+ * The resize grip in a bottom corner: a band along the rim of the rounded
+ * corner, `thickness` px deep, continuing `extent` px along both edges. The rim
+ * stays clear of the controls inset from the edges, so it never steals their
+ * clicks. Coordinates are local to a square box of `size` px whose bottom-right
+ * corner is the island's corner (mirror the box for the left corner).
+ * @returns {{ size: number, clip: string, grip: string }} clip-path and grip-stroke path data
+ */
+export function cornerGrip({ r, extent = 28, thickness = 12, inset = 6, tail = 8 }) {
+  const R = Math.max(0, r);
+  const S = R + extent;
+  const ri = Math.max(0, R - thickness);
+  const rg = Math.max(0, R - inset);
+  const clip = [
+    `M${r1(S - thickness)},0`, `L${r1(S)},0`, `L${r1(S)},${r1(S - R)}`,
+    `A${r1(R)},${r1(R)} 0 0 1 ${r1(S - R)},${r1(S)}`,
+    `L0,${r1(S)}`, `L0,${r1(S - thickness)}`, `L${r1(S - thickness - ri)},${r1(S - thickness)}`,
+    `A${r1(ri)},${r1(ri)} 0 0 0 ${r1(S - thickness)},${r1(S - thickness - ri)}`, 'Z',
+  ].join(' ');
+  const g = S - inset;
+  const grip = [
+    `M${r1(g)},${r1(S - R - tail)}`, `L${r1(g)},${r1(S - inset - rg)}`,
+    `A${r1(rg)},${r1(rg)} 0 0 1 ${r1(S - inset - rg)},${r1(g)}`,
+    `L${r1(S - R - tail)},${r1(g)}`,
+  ].join(' ');
+  return { size: S, clip, grip };
+}
+
 /** Is (x, y) on the island body (with an optional margin)? */
 export function hitIsland({ cx, top = 0, w, h }, x, y, margin = 0) {
   return Math.abs(x - cx) <= w / 2 + margin && y >= top - 4 && y <= top + h + margin;

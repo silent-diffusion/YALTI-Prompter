@@ -2,7 +2,9 @@
 // the prompter updates live while you adjust it.
 
 import { FIELDS, FONTS, fontById } from '../../core/settings-schema.js';
+import { describeDuration, SPEAKING_WPM } from '../../core/text.js';
 import { icon } from '../shared/icons.js';
+import { dropKind, openDropped } from '../shared/drop.js';
 
 const api = window.yalti;
 let S = null; // current settings
@@ -150,6 +152,7 @@ const SECTIONS = [
   { id: 'voice', label: 'Voice', icon: 'mic', render: renderVoice },
   { id: 'shortcuts', label: 'Shortcuts', icon: 'keyboard', render: renderShortcuts },
   { id: 'general', label: 'General', icon: 'sliders-horizontal', render: renderGeneral },
+  { id: 'updates', label: 'Updates', icon: 'download', render: renderUpdates },
   { id: 'about', label: 'About', icon: 'info', render: renderAbout },
 ];
 
@@ -158,7 +161,7 @@ async function renderScript() {
   const paintInfo = (script) => {
     info.replaceChildren(
       h('strong', {}, script ? script.title : 'No script loaded'),
-      h('span', {}, script ? `${script.fileName || (script.kind === 'sample' ? 'Built-in welcome script' : 'Pasted / written in YALTI')} · ${script.wordCount.toLocaleString()} words · about ${Math.max(1, Math.round(script.wordCount / 140))} min` : 'Open a .txt or .md file to begin.'));
+      h('span', {}, script ? `${script.fileName || (script.kind === 'sample' ? 'Built-in welcome script' : 'Pasted / written in YALTI')} · ${script.wordCount.toLocaleString()} words · ${describeDuration(script.wordCount / SPEAKING_WPM)} to read aloud` : 'Open a .txt or .md file to begin.'));
   };
   paintInfo(await api.currentScript());
   const unsub = api.on('script:loaded', paintInfo);
@@ -173,9 +176,15 @@ async function renderScript() {
   paintRecent();
   cleanup.push(api.on('script:loaded', paintRecent));
 
+  const zone = h('button', { type: 'button', class: 'dropzone', onclick: () => api.openScriptDialog() },
+    h('span', { class: 'dz-icon', html: icon('file-text', 22) }),
+    h('strong', {}, 'Drop a script or highlighted text here'),
+    h('span', {}, 'Text, Markdown and subtitle files, or a selection dragged from Word, a browser or any app. Click to browse.'));
+
   return [
     h('h1', {}, 'Script'),
     h('p', { class: 'lede' }, 'Open plain text (.txt), Markdown (.md) and subtitle files (.srt, .vtt). Markdown is shown as clean text — headings, lists and emphasis without the symbols. Text in [square brackets] is shown as a quiet cue and never tracked.'),
+    zone,
     card(null,
       h('div', { class: 'row' }, info, h('div', { class: 'control' },
         button('Open…', () => api.openScriptDialog(), { iconName: 'folder-open', cls: 'primary' }),
@@ -322,7 +331,8 @@ async function renderVoice() {
     card('Following your voice',
       row('Sensitivity', 'Cautious waits for more words before moving; Responsive follows faster.', seg('speechSensitivity', [
         { value: 'cautious', label: 'Cautious' }, { value: 'balanced', label: 'Balanced' }, { value: 'responsive', label: 'Responsive' }])),
-      row('Find my place anywhere', 'When you skip ahead or go back, jump to where you resumed. Off: only follow nearby text.', toggle('allowJumps'))),
+      row('Find my place anywhere', 'When you skip ahead or go back, jump to where you resumed. Off: only follow nearby text.', toggle('allowJumps')),
+      row('Microphone indicator', 'A small live waveform in the corner of the prompter while YALTI listens. Click it to stop listening.', toggle('showMicIndicator'))),
     card('Engine',
       row('Speech model', models.length ? 'English is included. More sherpa-onnx streaming models can be added to the models folder.' : 'Voice tracking needs a model; manual and auto-scroll still work.', modelSelect),
       row('Processor threads', 'More threads can lower latency on slow machines; one is plenty for most.', slider('speechThreads', { format: (v) => String(v) })),
@@ -383,7 +393,7 @@ function renderShortcuts() {
     });
     return row(a.label, null, h('span', { class: 'control' }, dot, btn));
   });
-  const local = [['Start / pause', 'Space'], ['Voice tracking on / off', 'M'], ['Scroll a line / a page', '↑ ↓ · PgUp PgDn'], ['Back to the start', 'Home'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open · Paste · Edit · Reload', 'Ctrl+O · Ctrl+V · Ctrl+E · Ctrl+R'], ['Settings', 'Ctrl+,'], ['Collapse · Hide', 'Esc · H'], ['All shortcuts', '?']];
+  const local = [['Start / pause', 'Space'], ['Voice tracking on / off', 'M'], ['Scroll a line / a page', '↑ ↓ · PgUp PgDn'], ['Back to the start / end', 'Home · End'], ['Jump back after a jump', 'Backspace'], ['Slower / faster', '[ ]'], ['Text size', 'Ctrl + / −'], ['Open · Paste · Edit · Reload', 'Ctrl+O · Ctrl+V · Ctrl+E · Ctrl+R'], ['Settings', 'Ctrl+,'], ['Collapse · Hide', 'Esc · H'], ['All shortcuts', '?']];
   return [
     h('h1', {}, 'Shortcuts'),
     h('p', { class: 'lede' }, 'Global shortcuts work even while another app — your slides or a video call — has focus. Click a shortcut to record a new one; press Backspace to clear it.'),
@@ -405,7 +415,8 @@ function recordShortcut(id, btn) {
     window.removeEventListener('keydown', onKey, true);
     btn.classList.remove('recording');
     if (e.key === 'Escape') { btn.textContent = S.shortcuts[id] || 'Not set'; return; }
-    if (e.key === 'Backspace' || e.key === 'Delete') { set({ shortcuts: { ...S.shortcuts, [id]: '' } }); return; }
+    const bare = !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey;
+    if (bare && (e.key === 'Backspace' || e.key === 'Delete')) { set({ shortcuts: { ...S.shortcuts, [id]: '' } }); return; }
     const key = acceleratorKey(e);
     const mods = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Super'].filter(Boolean);
     if (!key || (!mods.length && !/^F\d+$|^Media/.test(key))) { btn.textContent = 'Use a modifier (Ctrl, Alt…)'; setTimeout(() => { btn.textContent = S.shortcuts[id] || 'Not set'; }, 1600); return; }
@@ -422,7 +433,7 @@ function acceleratorKey(e) {
   if (/^Numpad\d$/.test(code)) return `num${code.slice(6)}`;
   const map = {
     Space: 'Space', Enter: 'Enter', Tab: 'Tab', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
-    PageUp: 'PageUp', PageDown: 'PageDown', Home: 'Home', End: 'End', Insert: 'Insert', Minus: '-', Equal: '=',
+    PageUp: 'PageUp', PageDown: 'PageDown', Home: 'Home', End: 'End', Insert: 'Insert', Backspace: 'Backspace', Delete: 'Delete', Minus: '-', Equal: '=',
     BracketLeft: '[', BracketRight: ']', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/', Backslash: '\\',
     Backquote: '`', NumpadAdd: 'numadd', NumpadSubtract: 'numsub', NumpadMultiply: 'nummult', NumpadDivide: 'numdiv',
     NumpadDecimal: 'numdec', NumpadEnter: 'Enter', MediaPlayPause: 'MediaPlayPause', MediaTrackNext: 'MediaNextTrack',
@@ -443,6 +454,117 @@ function renderGeneral() {
         if (window.confirm('Reset all settings to their defaults?')) await api.resetSettings();
       }, { cls: 'danger' }))),
     card(null, row('Quit YALTI Prompter', 'The prompter normally keeps running in the tray.', button('Quit', () => api.quit()))),
+  ];
+}
+
+/** Release notes are Markdown; show them as calm plain text. */
+function plainNotes(md) {
+  return md
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '• ')
+    .replace(/\*\*(.+?)\*\*|__(.+?)__/g, '$1$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+const formatDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+const formatTime = (ms) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const megabytes = (n) => `${Math.max(1, Math.round(n / 1e6))} MB`;
+
+async function renderUpdates() {
+  const info = h('div', { class: 'label' });
+  const actions = h('span', { class: 'control' });
+  const bar = h('div', { class: 'update-progress', hidden: true }, h('div'));
+  const notes = h('div', { class: 'release-notes' });
+  const notesCard = card('What’s new', notes);
+
+  const paint = (s) => {
+    const v = s.latest?.version;
+    const newer = !!v && v !== s.current;
+    const checked = s.checkedAt ? ` Checked at ${formatTime(s.checkedAt)}.` : '';
+    const released = s.latest?.publishedAt ? ` (released ${formatDate(s.latest.publishedAt)})` : '';
+    const check = (label = 'Check for updates', cls = '') => button(label, () => api.checkForUpdates(), { iconName: 'refresh-cw', cls });
+    const page = () => button('Release page', () => api.openShell('release'), { iconName: 'external-link', cls: 'ghost' });
+    let text = '';
+    let error = false;
+    let buttons = [];
+    bar.hidden = true;
+    switch (s.state) {
+      case 'checking':
+        text = 'Checking GitHub for a new version…';
+        buttons = [h('button', { class: 'btn', type: 'button', disabled: true, html: icon('refresh-cw', 15) }, 'Checking…')];
+        break;
+      case 'up-to-date':
+        text = `You have the latest version.${checked}`;
+        buttons = [check()];
+        break;
+      case 'available':
+        if (!s.canDownload) {
+          text = `Version ${v} is available${released}. This is a development copy, so get it from the release page.`;
+          buttons = [page(), check('Check again')];
+        } else {
+          text = `Version ${v} is available${released}.`;
+          const label = { installer: 'Download and install', portable: 'Download', zip: 'Download zip' }[s.kind];
+          buttons = [page(), button(label, () => api.downloadUpdate(), { iconName: 'download', cls: 'primary' })];
+        }
+        break;
+      case 'downloading': {
+        const { received = 0, total = 0 } = s.progress || {};
+        const pct = total ? Math.min(100, Math.floor((received / total) * 100)) : 0;
+        text = `Downloading version ${v}… ${total ? `${pct}% of ${megabytes(total)}` : megabytes(received)}`;
+        bar.hidden = false;
+        bar.firstChild.style.width = `${pct}%`;
+        buttons = [button('Cancel', () => api.cancelUpdate(), { cls: 'ghost' })];
+        break;
+      }
+      case 'downloaded':
+        if (s.kind === 'installer') {
+          text = `Version ${v} is ready. It installs when you quit YALTI — or install it now and YALTI restarts in a moment.`;
+          buttons = [button('Restart and install', () => api.installUpdate(), { iconName: 'refresh-cw', cls: 'primary' })];
+        } else if (s.kind === 'portable') {
+          text = `Version ${v} was saved next to this copy of YALTI. Switch to it now; your settings come along.`;
+          buttons = [button('Switch to the new version', () => api.installUpdate(), { iconName: 'refresh-cw', cls: 'primary' })];
+        } else {
+          text = `Version ${v} was saved to your Downloads folder. Unzip it in place of this folder to update.`;
+          buttons = [button('Show in folder', () => api.installUpdate(), { iconName: 'folder-open' })];
+        }
+        if (s.error) { text = s.error; error = true; }
+        break;
+      case 'installing':
+        text = 'Starting the update — YALTI will close and come back in a moment.';
+        break;
+      case 'error':
+        text = s.error || 'Updating failed.';
+        error = true;
+        buttons = newer ? [page(), check('Try again')] : [check('Try again')];
+        break;
+      default:
+        text = 'YALTI hasn’t checked for updates yet.';
+        buttons = [check('Check for updates', 'primary')];
+    }
+    info.replaceChildren(h('strong', {}, `YALTI Prompter ${s.current}`), h('span', { class: error ? 'bad' : '' }, text));
+    actions.replaceChildren(...buttons);
+    notesCard.hidden = !(newer && s.latest.notes);
+    notes.textContent = newer ? plainNotes(s.latest.notes || '') : '';
+  };
+  const status = await api.updateStatus();
+  paint(status);
+  cleanup.push(api.on('update:status', paint));
+
+  const autoDesc = status.kind === 'installer'
+    ? 'When YALTI starts, and once a day while it runs, check GitHub for a new version and download it in the background. It installs the next time you quit — never in the middle of a talk.'
+    : 'When YALTI starts, and once a day while it runs, check GitHub for a new version and let you know. This copy updates only when you choose to.';
+
+  return [
+    h('h1', {}, 'Updates'),
+    h('p', { class: 'lede' }, 'New versions of YALTI Prompter are published on GitHub. Check for one here, or let YALTI keep itself up to date.'),
+    card(null, h('div', { class: 'row update-row' }, info, actions), bar),
+    notesCard,
+    card('Automatic updates',
+      row('Update automatically', autoDesc, toggle('autoUpdate')),
+      h('div', { class: 'note' }, 'Checking for updates is the only time YALTI goes online: it asks GitHub for the latest release and downloads it from there. Nothing about you or your scripts is sent, and every download is checked against the checksums published with the release before it is used.')),
   ];
 }
 
@@ -470,6 +592,48 @@ function renderAbout() {
       row('License texts', null, button('Open licenses', () => api.openShell('licenses'), { iconName: 'file-text' })),
       row('Project page', 'Source code, releases and issues on GitHub.', button('Open on GitHub', () => api.openShell('repo'), { iconName: 'external-link' }))),
   ];
+}
+
+/* ---------- drag and drop ---------- */
+
+let flashTimer = null;
+function flash(message, kind = 'info') {
+  let el = document.getElementById('flash');
+  if (!el) {
+    el = h('div', { id: 'flash', role: 'status', 'aria-live': 'polite' });
+    document.body.append(el);
+  }
+  el.textContent = message;
+  el.classList.toggle('error', kind === 'error');
+  el.classList.add('show');
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+/** Dropping a script file or highlighted text anywhere in Settings opens it in the prompter. */
+function setupDrop() {
+  window.addEventListener('dragover', (e) => {
+    if (!dropKind(e.dataTransfer)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    document.body.classList.add('drop-target');
+  });
+  window.addEventListener('dragleave', (e) => {
+    if (!e.relatedTarget) document.body.classList.remove('drop-target');
+  });
+  window.addEventListener('drop', async (e) => {
+    document.body.classList.remove('drop-target');
+    if (!dropKind(e.dataTransfer)) return;
+    e.preventDefault();
+    const res = await openDropped(api, e.dataTransfer);
+    if (res.ok) {
+      const script = await api.currentScript();
+      flash(`Opened “${script?.title || 'your script'}” in the prompter`);
+      if (current !== 'script') show('script');
+    } else {
+      flash(res.message || 'That couldn’t be opened as a script.', 'error');
+    }
+  });
 }
 
 /* ---------- navigation ---------- */
@@ -500,6 +664,7 @@ async function init() {
   api.on('settings:changed', (s) => { S = s; for (const fn of updaters) fn(S); });
   api.on('shortcuts:status', (st) => { shortcutStatus = st; for (const fn of updaters) fn(S); });
   api.on('panel:section', (id) => show(id));
+  setupDrop();
   await show(location.hash.slice(1) || 'text');
 }
 

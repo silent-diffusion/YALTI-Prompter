@@ -49,7 +49,7 @@ export class AppTray {
       { type: 'separator' },
       { label: s.ui.playing ? 'Pause' : 'Start', accelerator: accel('playPause'), click: c('playPause') },
       { label: 'Voice tracking', type: 'checkbox', checked: !!s.ui.listening, accelerator: accel('toggleVoice'), click: c('toggleVoice') },
-      { label: 'Auto-scroll', type: 'checkbox', checked: s.settings.scrollMode === 'auto', click: c('setMode', 'auto') },
+      { label: 'Auto-scroll', type: 'checkbox', checked: s.settings.scrollMode === 'auto', click: c('setMode', s.settings.scrollMode === 'auto' ? 'voice' : 'auto') },
       { label: 'Back to the start', accelerator: accel('restart'), click: c('restart') },
       { type: 'separator' },
       { label: 'Always on top', type: 'checkbox', checked: s.settings.alwaysOnTop, click: c('toggleSetting', 'alwaysOnTop') },
@@ -63,6 +63,9 @@ export class AppTray {
         })),
       }] : []),
       { label: 'Settings…', click: c('openSettings') },
+      s.update?.state === 'downloaded' && ['installer', 'portable'].includes(s.update.kind)
+        ? { label: `Restart to update to ${s.update.latest.version}`, click: c('installUpdate') }
+        : { label: 'Check for updates…', click: c('checkUpdates') },
       { type: 'separator' },
       { label: 'Quit YALTI Prompter', click: c('quit') },
     ]);

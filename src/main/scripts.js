@@ -70,11 +70,11 @@ export class ScriptManager extends EventEmitter {
     return this._setCurrent(this._payload(text, { format: 'markdown', kind: 'sample' }));
   }
 
-  /** A script that lives only inside the app (pasted or written in the editor). */
-  openText(text, { title = null, keepPosition = false } = {}) {
+  /** A script that lives only inside the app (pasted, dropped or written in the editor). */
+  openText(text, { title = null, format = 'markdown', keepPosition = false } = {}) {
     try { writeFileSync(paths.scratchFile(), text, 'utf8'); } catch { /* not fatal */ }
-    this.state.setLastScript('scratch');
-    return this._setCurrent(this._payload(text, { format: 'markdown', kind: 'scratch', title, keepPosition }));
+    this.state.setLastScript('scratch', format);
+    return this._setCurrent(this._payload(text, { format, kind: 'scratch', title, keepPosition }));
   }
 
   /** Re-open whatever was open last time. Returns null if nothing usable. */
@@ -82,7 +82,7 @@ export class ScriptManager extends EventEmitter {
     const last = this.state.state.lastScript;
     try {
       if (last === 'scratch' && existsSync(paths.scratchFile())) {
-        return this.openText(readFileSync(paths.scratchFile(), 'utf8'));
+        return this.openText(readFileSync(paths.scratchFile(), 'utf8'), { format: this.state.state.scratchFormat });
       }
       if (last && last.startsWith('sample:')) return this.openSample(last.slice(7));
       if (last && existsSync(last)) return this.openFile(last);

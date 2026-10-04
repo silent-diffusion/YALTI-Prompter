@@ -75,6 +75,7 @@ export class SettingsStore extends JsonFile {
 }
 
 const MAX_RECENT = 10;
+const SCRATCH_FORMATS = ['markdown', 'text', 'subtitles'];
 const MAX_POSITIONS = 60;
 
 export class StateStore extends JsonFile {
@@ -85,7 +86,8 @@ export class StateStore extends JsonFile {
       recent: Array.isArray(stored.recent) ? stored.recent.filter((p) => typeof p === 'string').slice(0, MAX_RECENT) : [],
       lastScript: typeof stored.lastScript === 'string' ? stored.lastScript : null,
       positions: stored.positions && typeof stored.positions === 'object' ? stored.positions : {},
-      seenWelcome: !!stored.seenWelcome,
+      // How the in-app (scratch) script is parsed when it is reopened.
+      scratchFormat: SCRATCH_FORMATS.includes(stored.scratchFormat) ? stored.scratchFormat : 'markdown',
     };
   }
 
@@ -108,8 +110,9 @@ export class StateStore extends JsonFile {
     this.scheduleSave();
   }
 
-  setLastScript(path) {
+  setLastScript(path, scratchFormat) {
     this.state.lastScript = path;
+    if (path === 'scratch' && SCRATCH_FORMATS.includes(scratchFormat)) this.state.scratchFormat = scratchFormat;
     this.scheduleSave();
   }
 
@@ -126,11 +129,6 @@ export class StateStore extends JsonFile {
       keys.sort((a, b) => this.state.positions[a].at - this.state.positions[b].at);
       for (const k of keys.slice(0, keys.length - MAX_POSITIONS)) delete this.state.positions[k];
     }
-    this.scheduleSave();
-  }
-
-  set(key, value) {
-    this.state[key] = value;
     this.scheduleSave();
   }
 }

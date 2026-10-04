@@ -29,7 +29,8 @@ npm start
 - **Keep it light.** No UI frameworks or bundlers; plain HTML, CSS and JavaScript modules.
   Think twice before adding a dependency — every runtime dependency must be open source under a
   permissive license (`npm run check-licenses` enforces an allowlist).
-- **Keep it private.** No network requests, analytics or cloud services in the running app.
+- **Keep it private.** No network requests, analytics or cloud services in the running app. The
+  only exception is the opt-in updater in `src/main/updater.js`; keep it that way.
 - **Keep logic testable.** Pure logic belongs in `src/core/` with unit tests in `test/unit/`.
   Changes to the tracker need a scenario test, and should not regress the stress behavior described
   in ARCHITECTURE.md.

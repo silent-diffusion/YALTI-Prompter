@@ -23,6 +23,7 @@ export const SHORTCUT_ACTIONS = [
   { id: 'faster', label: 'Faster auto-scroll', default: 'Ctrl+Alt+=' },
   { id: 'slower', label: 'Slower auto-scroll', default: 'Ctrl+Alt+-' },
   { id: 'restart', label: 'Back to the start', default: 'Ctrl+Alt+Home' },
+  { id: 'jumpBack', label: 'Jump back after a jump', default: 'Ctrl+Alt+Backspace' },
 ];
 
 /**
@@ -73,6 +74,7 @@ export const FIELDS = {
   // Voice
   speechSensitivity: { type: 'enum', options: ['cautious', 'balanced', 'responsive'], default: 'balanced' },
   allowJumps: { type: 'bool', default: true },
+  showMicIndicator: { type: 'bool', default: true },
   micDeviceId: { type: 'string', default: '' },
   modelId: { type: 'string', default: '' },
   speechThreads: { type: 'number', min: 1, max: 4, step: 1, default: 1 },
@@ -83,6 +85,8 @@ export const FIELDS = {
   globalShortcuts: { type: 'bool', default: true },
   reopenLastScript: { type: 'bool', default: true },
   watchScriptFile: { type: 'bool', default: true },
+  // Off by default: YALTI makes no network requests unless you ask it to.
+  autoUpdate: { type: 'bool', default: false },
   shortcuts: { type: 'object', default: Object.fromEntries(SHORTCUT_ACTIONS.map((a) => [a.id, a.default])) },
 };
 

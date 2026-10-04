@@ -3,6 +3,8 @@
 // never stored and never leaves the computer.
 
 const PORT_TIMEOUT_MS = 30000;
+// Voice frequency bands (Hz) shown by the microphone indicator.
+const BAND_EDGES = [125, 250, 500, 1000, 2000, 4000];
 
 export class VoiceInput {
   /**
@@ -15,6 +17,7 @@ export class VoiceInput {
     this.stream = null;
     this.ctx = null;
     this.node = null;
+    this.analyser = null;
     this.active = false;
     this.engineReady = false;
     this.deviceId = '';
@@ -149,6 +152,17 @@ export class VoiceInput {
     mute.gain.value = 0;
     source.connect(node).connect(mute).connect(ctx.destination);
     this.node = node;
+    // A small analyser feeds the microphone indicator (read only while it is shown).
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.5;
+    analyser.minDecibels = -88;
+    analyser.maxDecibels = -28;
+    source.connect(analyser);
+    const binHz = ctx.sampleRate / analyser.fftSize;
+    this.analyser = analyser;
+    this.freq = new Uint8Array(analyser.frequencyBinCount);
+    this.bandBins = BAND_EDGES.map((hz) => Math.min(analyser.frequencyBinCount, Math.max(1, Math.round(hz / binHz))));
     node.port.onmessage = (e) => {
       const { pcm, rms } = e.data;
       this.stats.chunks++;
@@ -166,7 +180,26 @@ export class VoiceInput {
     this.stats.ctxState = ctx.state;
   }
 
+  /**
+   * Loudness of the microphone in voice frequency bands, 0–1 each (low to high).
+   * @param {Float32Array} out one entry per band (5)
+   */
+  bands(out) {
+    const a = this.analyser;
+    if (!a) return out.fill(0);
+    a.getByteFrequencyData(this.freq);
+    for (let i = 0; i < out.length; i++) {
+      const lo = this.bandBins[i] ?? 1;
+      const hi = Math.max(lo + 1, this.bandBins[i + 1] ?? lo + 1);
+      let sum = 0;
+      for (let k = lo; k < hi; k++) sum += this.freq[k];
+      out[i] = sum / ((hi - lo) * 255);
+    }
+    return out;
+  }
+
   _closeMic() {
+    this.analyser = null;
     if (this.node) {
       this.node.port.onmessage = null;
       try { this.node.disconnect(); } catch { /* ignore */ }

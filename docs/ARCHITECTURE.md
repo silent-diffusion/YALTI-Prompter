@@ -119,6 +119,11 @@ prompter.
   somewhere else.
 - **Manual scrolling** resets the tracker to the new place and clears the heard words, so they
   cannot pull the prompter back.
+- **Jump back** (`src/core/jump-back.js`): after a move the prompter decides whether to offer a
+  way back. Moves under two lines or six words never are; tracker jumps (`jumped`) and moves of
+  four or more lines always are; two- or three-line moves only when the old reading line has left
+  the visible part of the viewport. Going back restores both the view and the tracker position
+  and clears the heard words.
 
 The *Cautious*, *Balanced* and *Responsive* presets scale these thresholds. *Find my place anywhere*
 disables global jumps.
@@ -167,6 +172,26 @@ Files are decoded (UTF-8, UTF-16 with BOM, or Windows-1252) and parsed into bloc
 Markdown goes through `marked`'s lexer and is rebuilt as plain runs — raw HTML is never injected
 into the page. The document model maps display words to tracking tokens. When a file changes on
 disk, the prompter finds the same passage in the new text and keeps your place.
+
+## Updates (`src/main/updater.js`, `src/core/updates.js`)
+
+The updater is the only code that touches the network, and it runs only when the user checks for
+updates or has turned on automatic updates. It asks the GitHub API for the latest published
+release of the repository named in `package.json`, compares versions (`src/core/version.js`) and
+picks the file for this kind of install: the NSIS installer when an uninstaller sits next to the
+executable, the portable `.exe` when `PORTABLE_EXECUTABLE_FILE` is set, otherwise the zip. Only
+files under that repository's `releases/download/` URLs are accepted.
+
+Downloads stream to a `.part` file while a SHA-256 (from the release's `SHA256SUMS.txt`) or
+SHA-512 (from electron-builder's `latest.yml`) is computed; a mismatch discards the file, and a
+release without checksums is refused. Installer updates run `--updated /S --force-run` (silent,
+then restart) or, when installed on quit, `--updated /S`. Portable updates start the new `.exe`
+after releasing the single-instance lock. The Electron parts (`net.fetch`, paths, launching,
+quitting) are passed in, so `test/unit/updates.test.js` drives the whole flow against a fake
+GitHub.
+
+The NSIS installer itself (`build/installer.nsh`) detects an existing installation and offers to
+update it, to open YALTI and check for updates (`--check-updates`), or to uninstall.
 
 ## Settings and state
 

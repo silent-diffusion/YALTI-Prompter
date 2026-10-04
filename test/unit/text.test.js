@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeChunk, normalizePhrase, phoneticKey, wordSimilarity, editDistance, countWords } from '../../src/core/text.js';
+import { normalizeChunk, normalizePhrase, phoneticKey, wordSimilarity, editDistance, countWords, describeDuration } from '../../src/core/text.js';
 import { cardinal, numberToWords, yearWords } from '../../src/core/numbers.js';
 
 test('normalizes punctuation, case, accents and contractions', () => {
@@ -66,4 +66,15 @@ test('edit distance', () => {
 test('counts words', () => {
   assert.equal(countWords('Hello, world — it’s 2024!'), 4);
   assert.equal(countWords(''), 0);
+});
+
+test('describes reading time the same way everywhere', () => {
+  assert.equal(describeDuration(0), 'under a minute');
+  assert.equal(describeDuration(0.99), 'under a minute');
+  assert.equal(describeDuration(Number.NaN), 'under a minute');
+  assert.equal(describeDuration(1), 'about 1 min');
+  assert.equal(describeDuration(4.4), 'about 4 min');
+  assert.equal(describeDuration(59.4), 'about 59 min');
+  assert.equal(describeDuration(60), 'about 1 h');
+  assert.equal(describeDuration(75.2), 'about 1 h 15 min');
 });

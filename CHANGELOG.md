@@ -4,6 +4,37 @@ All notable changes to YALTI Prompter are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.1.0] — 2026-10-04
+
+### Added
+
+- **Updates from GitHub.** *Settings → Updates* (and *Check for updates…* in the tray) checks for a
+  new release, shows what's new, downloads it, verifies it against the release's published
+  checksums and installs it: a silent installer update with restart, a new portable `.exe` next to
+  the old one, or the zip in Downloads. *Update automatically* (off by default) checks at launch
+  and daily and installs on quit, never in the middle of a talk.
+- **Installer recognizes an existing installation** and offers to update (or reinstall) it, to open
+  YALTI and check for updates instead, or to uninstall.
+- **Drag and drop text.** Drop text highlighted in any app — or a file — on the island, in
+  Settings (new drop zone in *Script*) or on the editor. Files without a path on disk (from a
+  browser or mail) work too and keep their format.
+- **Microphone indicator.** A small round live waveform in the corner of the island while YALTI
+  listens; green while following, amber while waiting for the script. Click it to stop listening.
+- **Jump back.** When voice tracking moves your place a long way, a *Back to “…”* button offers to
+  return (also `Backspace`, or `Ctrl+Alt+Backspace` from anywhere), then to return again. It only
+  appears for real jumps, not for the next line.
+- **Resize from either bottom corner**, with a grip that lights up along the corner and the size
+  shown while dragging.
+
+### Fixed
+
+- The resize handle could not be grabbed once the controls appeared on hover.
+- The tray's *Auto-scroll* item could not switch back to voice tracking.
+- Reading-time estimates are phrased the same everywhere (Settings rounded short scripts up to
+  “about 1 min”).
+- Global shortcuts using Backspace or Delete could not be recorded.
+- An in-app script pasted or dropped elsewhere replaced only the editor's title, not its text.
+
 ## [1.0.0] — 2026-10-04
 
 First public release.
@@ -27,4 +58,5 @@ First public release.
 - Windows installer (per-user, with uninstaller), portable `.exe` and portable `.zip`.
 - Documentation, third-party license notices and automated unit, speech and app tests.
 
+[1.1.0]: https://github.com/silent-diffusion/YALTI-Prompter/releases/tag/v1.1.0
 [1.0.0]: https://github.com/silent-diffusion/YALTI-Prompter/releases/tag/v1.0.0

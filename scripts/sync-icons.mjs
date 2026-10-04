@@ -12,7 +12,7 @@ const ICONS = [
   'chevron-up', 'chevron-down', 'x', 'clipboard-paste', 'chevrons-down', 'audio-lines', 'refresh-cw',
   'keyboard', 'move-diagonal-2', 'info', 'triangle-alert', 'eye-off', 'type', 'palette', 'monitor',
   'book-open-text', 'file-text', 'circle-help', 'minus', 'plus', 'sparkles', 'save', 'file-plus',
-  'external-link', 'check', 'sliders-horizontal',
+  'external-link', 'check', 'sliders-horizontal', 'download',
 ];
 
 const pkg = JSON.parse(readFileSync(join(ROOT, 'node_modules', 'lucide-static', 'package.json'), 'utf8'));

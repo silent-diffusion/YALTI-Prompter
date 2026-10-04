@@ -31,13 +31,16 @@
 
         <div id="empty-state" hidden>
           <p class="empty-title">Drop a script here</p>
-          <p class="empty-sub">or open a .txt or .md file to begin</p>
+          <p class="empty-sub">a .txt or .md file, or text highlighted in any app</p>
           <div class="empty-actions">
             <button class="pill" data-action="open">Open script</button>
             <button class="pill" data-action="paste">Paste from clipboard</button>
             <button class="pill" data-action="edit">Write one</button>
           </div>
         </div>
+
+        <button id="jump-back" type="button"><span class="jb-icon"></span><span class="jb-text"></span><kbd>⌫</kbd></button>
+        <button id="mic-meter" type="button" title="Listening — click to stop" aria-label="Microphone is on. Click to stop listening." hidden></button>
 
         <div id="hint" aria-live="polite"></div>
         <div id="countdown" aria-live="assertive"></div>
@@ -61,7 +64,10 @@
           </div>
         </div>
         <div id="progress-bar"><div id="progress-fill"></div></div>
-        <div id="resize-handle" title="Drag to resize"></div>
+        <div class="resize-grip" data-corner="left" title="Drag to resize"></div>
+        <div class="resize-grip" data-corner="right" title="Drag to resize"></div>
+        <svg class="grip-mark" data-corner="left" aria-hidden="true"><path/></svg>
+        <svg class="grip-mark" data-corner="right" aria-hidden="true"><path/></svg>
 
         <div id="help" hidden>
           <div class="help-grid"></div>
