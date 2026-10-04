@@ -1,0 +1,163 @@
+{
+  "name": "yalti-prompter",
+  "productName": "YALTI Prompter",
+  "version": "1.0.0",
+  "description": "A minimalist, open-source desktop teleprompter that follows your voice. Your words. Your voice.",
+  "main": "src/main/main.js",
+  "type": "module",
+  "author": "silent-diffusion and the YALTI Prompter contributors",
+  "license": "MIT",
+  "homepage": "https://github.com/silent-diffusion/YALTI-Prompter#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/silent-diffusion/YALTI-Prompter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/silent-diffusion/YALTI-Prompter/issues"
+  },
+  "keywords": [
+    "teleprompter",
+    "prompter",
+    "speech-recognition",
+    "electron",
+    "windows",
+    "offline",
+    "privacy"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "node --test \"test/unit/*.test.js\"",
+    "test:speech": "node --test \"test/speech/*.test.js\"",
+    "test:app": "node scripts/smoke-test.mjs",
+    "test:all": "npm test && npm run test:speech && npm run test:app",
+    "fetch-model": "node scripts/fetch-model.mjs",
+    "icons": "electron scripts/make-icons.mjs",
+    "sync-icons": "node scripts/sync-icons.mjs",
+    "check-licenses": "node scripts/check-licenses.mjs",
+    "pack": "electron-builder --win --dir --publish never",
+    "dist": "electron-builder --win --publish never",
+    "release": "electron-builder --win --publish always",
+    "screenshots": "electron scripts/make-screenshots.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/atkinson-hyperlegible-next": "^5.3.0",
+    "@fontsource-variable/figtree": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/lexend": "^5.3.0",
+    "@fontsource-variable/literata": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource-variable/nunito": "^5.3.0",
+    "@fontsource-variable/source-serif-4": "^5.3.0",
+    "marked": "^18.0.14",
+    "sherpa-onnx-node": "^1.13.8"
+  },
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "lucide-static": "^1.52.0"
+  },
+  "build": {
+    "appId": "app.yalti.prompter",
+    "productName": "YALTI Prompter",
+    "copyright": "Copyright © 2026 silent-diffusion and the YALTI Prompter contributors",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "package.json",
+      "src/**/*",
+      "assets/**/*",
+      "!**/*.map",
+      "!**/node_modules/**/{CHANGELOG.md,README.md,*.d.ts,*.d.css.ts}",
+      "!**/node_modules/@fontsource-variable/*/scss/**",
+      "!**/node_modules/marked/{man,bin,src}/**"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/sherpa-onnx-node/**",
+      "node_modules/sherpa-onnx-win-x64/**"
+    ],
+    "npmRebuild": false,
+    "electronLanguages": [
+      "en-US"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/models",
+        "to": "models",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "licenses",
+        "to": "licenses",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "LICENSE",
+        "to": "licenses/LICENSE-YALTI-Prompter.txt"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.md",
+        "to": "licenses/THIRD_PARTY_NOTICES.md"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "YALTI-Prompter-${version}-win-${arch}.${ext}",
+      "legalTrademarks": "YALTI Prompter"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "YALTI Prompter",
+      "uninstallDisplayName": "YALTI Prompter",
+      "license": "LICENSE",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "YALTI-Prompter-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "YALTI-Prompter-Portable-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "draft"
+    }
+  }
+}

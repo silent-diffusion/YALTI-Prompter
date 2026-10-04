@@ -1,0 +1,3 @@
+sherpa-onnx-win-x64@1.13.8 is licensed under Apache-2.0.
+See ../../Apache-2.0.txt for the full license text.
+Source: https://github.com/csukuangfj/sherpa-onnx#readme

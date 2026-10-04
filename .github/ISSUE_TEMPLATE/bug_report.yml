@@ -1,0 +1,50 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to report a problem! Please don't include private script content.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a script…
+        2. Start voice tracking…
+        3. …
+  - type: input
+    id: version
+    attributes:
+      label: YALTI Prompter version
+      description: Settings → About
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Voice tracking
+        - Island / display
+        - Scripts and editor
+        - Settings
+        - Installer / portable
+        - Other
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, your microphone, sensitivity setting, how you were speaking (pauses, skips, ad-libs)…

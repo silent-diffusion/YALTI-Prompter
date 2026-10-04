@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>YALTI Prompter — Script</title>
+  <link rel="stylesheet" href="../shared/fonts.css">
+  <link rel="stylesheet" href="../shared/panel.css">
+  <link rel="stylesheet" href="editor.css">
+  <script type="module" src="editor.js"></script>
+</head>
+<body>
+  <header class="titlebar">
+    <img class="mark" src="/assets/icons/icon.png" alt="">
+    <span class="title" id="doc-title">Script</span>
+    <span class="sub" id="doc-state"></span>
+  </header>
+  <div class="toolbar">
+    <button class="btn" id="btn-new" title="New script (Ctrl+N)"></button>
+    <button class="btn" id="btn-open" title="Open (Ctrl+O)"></button>
+    <button class="btn primary" id="btn-save" title="Save (Ctrl+S)"></button>
+    <button class="btn" id="btn-saveas" title="Save as (Ctrl+Shift+S)"></button>
+    <span class="spacer"></span>
+    <label class="live"><button class="switch" id="live" role="switch" aria-checked="true" aria-label="Update prompter while typing"></button> Live update</label>
+  </div>
+  <main class="editor-wrap">
+    <textarea id="text" spellcheck="true" placeholder="Write or paste your script here.
+
+Markdown works: # headings, **bold**, *italic*, - lists.
+Text in [square brackets] becomes a quiet cue that is never tracked."></textarea>
+  </main>
+  <footer class="statusbar">
+    <span id="stats"></span>
+    <span class="faint">Markdown supported · [cues] are not read aloud</span>
+  </footer>
+</body>
+</html>

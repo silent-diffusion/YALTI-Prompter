@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+
+# Speech model files are downloaded by `npm run fetch-model` (see docs/BUILDING.md)
+resources/models/*
+!resources/models/README.md
+
+# Test output
+test-output/
+
+# Logs and OS files
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# Local handoff note (not part of the repository)
+HANDOFF.md

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>YALTI Prompter</title>
+  <link rel="stylesheet" href="../shared/fonts.css">
+  <link rel="stylesheet" href="prompter.css">
+  <script type="module" src="main.js"></script>
+</head>
+<body>
+  <div id="stage">
+    <svg id="island-svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="sheen" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+          <stop offset="0.5" stop-color="#fff" stop-opacity="1"/>
+          <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path id="island-path"/>
+      <path id="island-sheen" fill="none" stroke="url(#sheen)" stroke-width="1"/>
+    </svg>
+
+    <main id="island" aria-label="Teleprompter">
+      <section id="expanded" aria-hidden="true">
+        <div id="viewport">
+          <div id="column" role="document" aria-live="off"></div>
+          <div id="reading-marker" aria-hidden="true"></div>
+        </div>
+
+        <div id="empty-state" hidden>
+          <p class="empty-title">Drop a script here</p>
+          <p class="empty-sub">or open a .txt or .md file to begin</p>
+          <div class="empty-actions">
+            <button class="pill" data-action="open">Open script</button>
+            <button class="pill" data-action="paste">Paste from clipboard</button>
+            <button class="pill" data-action="edit">Write one</button>
+          </div>
+        </div>
+
+        <div id="hint" aria-live="polite"></div>
+        <div id="countdown" aria-live="assertive"></div>
+
+        <div id="controls" role="toolbar" aria-label="Prompter controls">
+          <div class="group left">
+            <span id="progress-text"></span>
+          </div>
+          <div class="group center">
+            <button class="ctl" data-action="restart" title="Back to the start (Home)"></button>
+            <button class="ctl mode" data-action="toggle-voice" title="Voice tracking (M)"></button>
+            <button class="ctl primary" data-action="play" title="Start / pause (Space)"></button>
+            <button class="ctl" data-action="slower" title="Slower ( [ )"></button>
+            <button class="ctl" data-action="faster" title="Faster ( ] )"></button>
+          </div>
+          <div class="group right">
+            <button class="ctl" data-action="open" title="Open script (Ctrl+O)"></button>
+            <button class="ctl" data-action="edit" title="Edit script (Ctrl+E)"></button>
+            <button class="ctl" data-action="settings" title="Settings (Ctrl+,)"></button>
+            <button class="ctl" data-action="collapse" title="Collapse (Esc)"></button>
+          </div>
+        </div>
+        <div id="progress-bar"><div id="progress-fill"></div></div>
+        <div id="resize-handle" title="Drag to resize"></div>
+
+        <div id="help" hidden>
+          <div class="help-grid"></div>
+          <p class="help-foot">Press <kbd>?</kbd> or <kbd>Esc</kbd> to close</p>
+        </div>
+      </section>
+
+      <section id="compact" aria-hidden="true">
+        <span id="compact-dot"></span>
+        <span id="compact-label"></span>
+        <span id="compact-progress"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5" class="track"/><circle cx="10" cy="10" r="7.5" class="value"/></svg></span>
+      </section>
+
+      <section id="toast" role="status" aria-live="polite"></section>
+      <div id="drop-overlay">Drop to open</div>
+    </main>
+  </div>
+</body>
+</html>

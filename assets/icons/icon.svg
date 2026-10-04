@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e9e9ee"/>
+    </linearGradient>
+    <linearGradient id="island" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000"/>
+      <stop offset="1" stop-color="#121216"/>
+    </linearGradient>
+    <clipPath id="clip"><rect x="40" y="40" width="944" height="944" rx="216"/></clipPath>
+  </defs>
+  <rect x="40" y="40" width="944" height="944" rx="216" fill="url(#tile)"/>
+  <g clip-path="url(#clip)">
+    <!-- The island flowing out of the top edge, with liquid shoulders. -->
+    <path fill="url(#island)" d="M118,30 L118,40 C178,40 214,62 214,122 L214,440 C214,522 262,566 344,566 L680,566 C762,566 810,522 810,440 L810,122 C810,62 846,40 906,40 L906,30 Z"/>
+    <!-- Script lines: the one being read is highlighted. -->
+    <rect x="300" y="250" width="424" height="58" rx="29" fill="#ffd166"/>
+    <rect x="300" y="362" width="340" height="50" rx="25" fill="#ffffff" fill-opacity="0.88"/>
+    <rect x="300" y="456" width="250" height="44" rx="22" fill="#ffffff" fill-opacity="0.45"/>
+  </g>
+  <!-- Faint lines on the "screen" below, the rest of the script. -->
+  <rect x="300" y="680" width="424" height="40" rx="20" fill="#0b0b0d" fill-opacity="0.12"/>
+  <rect x="300" y="770" width="330" height="40" rx="20" fill="#0b0b0d" fill-opacity="0.08"/>
+</svg>
