@@ -63,6 +63,9 @@ export class AppTray {
         })),
       }] : []),
       { label: 'Settings…', click: c('openSettings') },
+      s.update?.state === 'downloaded' && ['installer', 'portable'].includes(s.update.kind)
+        ? { label: `Restart to update to ${s.update.latest.version}`, click: c('installUpdate') }
+        : { label: 'Check for updates…', click: c('checkUpdates') },
       { type: 'separator' },
       { label: 'Quit YALTI Prompter', click: c('quit') },
     ]);

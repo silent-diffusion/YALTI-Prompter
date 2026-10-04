@@ -284,3 +284,34 @@ body.drop-target::after {
 @media (prefers-reduced-motion: reduce) {
   #flash, .dropzone { transition: none; }
 }
+
+/* ---------- Updates ---------- */
+
+.row .label span.bad { color: #ffb4a8; }
+.update-row { flex-wrap: wrap; }
+.update-row .label { flex: 1 1 280px; }
+.update-row .control { margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+.update-progress {
+  height: 4px;
+  margin: 0 16px 14px;
+  border-radius: 4px;
+  background: var(--line-strong);
+  overflow: hidden;
+}
+.update-progress[hidden] { display: none; }
+.update-progress div {
+  height: 100%;
+  width: 0;
+  border-radius: 4px;
+  background: var(--accent);
+  transition: width .3s ease;
+}
+.release-notes {
+  padding: 8px 16px 16px;
+  white-space: pre-wrap;
+  color: var(--fg-dim);
+  font-size: 13px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.card[hidden] { display: none; }

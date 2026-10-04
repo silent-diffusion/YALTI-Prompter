@@ -152,6 +152,7 @@ const SECTIONS = [
   { id: 'voice', label: 'Voice', icon: 'mic', render: renderVoice },
   { id: 'shortcuts', label: 'Shortcuts', icon: 'keyboard', render: renderShortcuts },
   { id: 'general', label: 'General', icon: 'sliders-horizontal', render: renderGeneral },
+  { id: 'updates', label: 'Updates', icon: 'download', render: renderUpdates },
   { id: 'about', label: 'About', icon: 'info', render: renderAbout },
 ];
 
@@ -453,6 +454,117 @@ function renderGeneral() {
         if (window.confirm('Reset all settings to their defaults?')) await api.resetSettings();
       }, { cls: 'danger' }))),
     card(null, row('Quit YALTI Prompter', 'The prompter normally keeps running in the tray.', button('Quit', () => api.quit()))),
+  ];
+}
+
+/** Release notes are Markdown; show them as calm plain text. */
+function plainNotes(md) {
+  return md
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '• ')
+    .replace(/\*\*(.+?)\*\*|__(.+?)__/g, '$1$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+const formatDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+const formatTime = (ms) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const megabytes = (n) => `${Math.max(1, Math.round(n / 1e6))} MB`;
+
+async function renderUpdates() {
+  const info = h('div', { class: 'label' });
+  const actions = h('span', { class: 'control' });
+  const bar = h('div', { class: 'update-progress', hidden: true }, h('div'));
+  const notes = h('div', { class: 'release-notes' });
+  const notesCard = card('What’s new', notes);
+
+  const paint = (s) => {
+    const v = s.latest?.version;
+    const newer = !!v && v !== s.current;
+    const checked = s.checkedAt ? ` Checked at ${formatTime(s.checkedAt)}.` : '';
+    const released = s.latest?.publishedAt ? ` (released ${formatDate(s.latest.publishedAt)})` : '';
+    const check = (label = 'Check for updates', cls = '') => button(label, () => api.checkForUpdates(), { iconName: 'refresh-cw', cls });
+    const page = () => button('Release page', () => api.openShell('release'), { iconName: 'external-link', cls: 'ghost' });
+    let text = '';
+    let error = false;
+    let buttons = [];
+    bar.hidden = true;
+    switch (s.state) {
+      case 'checking':
+        text = 'Checking GitHub for a new version…';
+        buttons = [h('button', { class: 'btn', type: 'button', disabled: true, html: icon('refresh-cw', 15) }, 'Checking…')];
+        break;
+      case 'up-to-date':
+        text = `You have the latest version.${checked}`;
+        buttons = [check()];
+        break;
+      case 'available':
+        if (!s.canDownload) {
+          text = `Version ${v} is available${released}. This is a development copy, so get it from the release page.`;
+          buttons = [page(), check('Check again')];
+        } else {
+          text = `Version ${v} is available${released}.`;
+          const label = { installer: 'Download and install', portable: 'Download', zip: 'Download zip' }[s.kind];
+          buttons = [page(), button(label, () => api.downloadUpdate(), { iconName: 'download', cls: 'primary' })];
+        }
+        break;
+      case 'downloading': {
+        const { received = 0, total = 0 } = s.progress || {};
+        const pct = total ? Math.min(100, Math.floor((received / total) * 100)) : 0;
+        text = `Downloading version ${v}… ${total ? `${pct}% of ${megabytes(total)}` : megabytes(received)}`;
+        bar.hidden = false;
+        bar.firstChild.style.width = `${pct}%`;
+        buttons = [button('Cancel', () => api.cancelUpdate(), { cls: 'ghost' })];
+        break;
+      }
+      case 'downloaded':
+        if (s.kind === 'installer') {
+          text = `Version ${v} is ready. It installs when you quit YALTI — or install it now and YALTI restarts in a moment.`;
+          buttons = [button('Restart and install', () => api.installUpdate(), { iconName: 'refresh-cw', cls: 'primary' })];
+        } else if (s.kind === 'portable') {
+          text = `Version ${v} was saved next to this copy of YALTI. Switch to it now; your settings come along.`;
+          buttons = [button('Switch to the new version', () => api.installUpdate(), { iconName: 'refresh-cw', cls: 'primary' })];
+        } else {
+          text = `Version ${v} was saved to your Downloads folder. Unzip it in place of this folder to update.`;
+          buttons = [button('Show in folder', () => api.installUpdate(), { iconName: 'folder-open' })];
+        }
+        if (s.error) { text = s.error; error = true; }
+        break;
+      case 'installing':
+        text = 'Starting the update — YALTI will close and come back in a moment.';
+        break;
+      case 'error':
+        text = s.error || 'Updating failed.';
+        error = true;
+        buttons = newer ? [page(), check('Try again')] : [check('Try again')];
+        break;
+      default:
+        text = 'YALTI hasn’t checked for updates yet.';
+        buttons = [check('Check for updates', 'primary')];
+    }
+    info.replaceChildren(h('strong', {}, `YALTI Prompter ${s.current}`), h('span', { class: error ? 'bad' : '' }, text));
+    actions.replaceChildren(...buttons);
+    notesCard.hidden = !(newer && s.latest.notes);
+    notes.textContent = newer ? plainNotes(s.latest.notes || '') : '';
+  };
+  const status = await api.updateStatus();
+  paint(status);
+  cleanup.push(api.on('update:status', paint));
+
+  const autoDesc = status.kind === 'installer'
+    ? 'When YALTI starts, and once a day while it runs, check GitHub for a new version and download it in the background. It installs the next time you quit — never in the middle of a talk.'
+    : 'When YALTI starts, and once a day while it runs, check GitHub for a new version and let you know. This copy updates only when you choose to.';
+
+  return [
+    h('h1', {}, 'Updates'),
+    h('p', { class: 'lede' }, 'New versions of YALTI Prompter are published on GitHub. Check for one here, or let YALTI keep itself up to date.'),
+    card(null, h('div', { class: 'row update-row' }, info, actions), bar),
+    notesCard,
+    card('Automatic updates',
+      row('Update automatically', autoDesc, toggle('autoUpdate')),
+      h('div', { class: 'note' }, 'Checking for updates is the only time YALTI goes online: it asks GitHub for the latest release and downloads it from there. Nothing about you or your scripts is sent, and every download is checked against the checksums published with the release before it is used.')),
   ];
 }
 

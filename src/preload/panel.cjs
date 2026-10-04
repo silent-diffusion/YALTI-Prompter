@@ -4,7 +4,7 @@
 
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
-const EVENTS = new Set(['settings:changed', 'script:loaded', 'shortcuts:status', 'speech:status', 'panel:section']);
+const EVENTS = new Set(['settings:changed', 'script:loaded', 'shortcuts:status', 'speech:status', 'panel:section', 'update:status']);
 
 contextBridge.exposeInMainWorld('yalti', {
   initial: () => ipcRenderer.invoke('app:initial'),
@@ -27,6 +27,12 @@ contextBridge.exposeInMainWorld('yalti', {
   reloadScript: () => ipcRenderer.invoke('script:reload'),
   pasteScript: () => ipcRenderer.invoke('script:paste'),
   openSample: () => ipcRenderer.invoke('script:sample'),
+
+  updateStatus: () => ipcRenderer.invoke('update:status'),
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  cancelUpdate: () => ipcRenderer.invoke('update:cancel'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
 
   command: (name, arg) => ipcRenderer.send('command', name, arg),
   openPanel: (name, section) => ipcRenderer.invoke('panel:open', name, section),

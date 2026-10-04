@@ -28,7 +28,8 @@ completely different part of the script — it finds your place again.
 - **Scripts the way you write them.** Open `.txt`, `.md` (rendered cleanly — no Markdown symbols), `.srt` and `.vtt` files; paste from the clipboard; drop a file — or text highlighted in any app — on the island or in Settings; or write in the built-in editor. Files reload automatically when you save them elsewhere, and YALTI remembers where you were in each script. Text in `[square brackets]` becomes a quiet stage direction that is never tracked.
 - **Auto-scroll and manual control** whenever you prefer: adjustable speed, optional countdown, mouse wheel, keys, or drag the text.
 - **Out of your way.** Transparent areas click through to the apps beneath. Always-on-top (even over full-screen slides), system-tray access, and global shortcuts that work while another app has focus.
-- **Private by design.** No accounts, no cloud, no telemetry, no recordings. Scripts and audio never leave your computer, and it works fully offline.
+- **Private by design.** No accounts, no cloud, no telemetry, no recordings. Scripts and audio never leave your computer, and it works fully offline. The only time it goes online is to check GitHub for updates — when you ask it to, or if you turn on automatic updates.
+- **Keeps itself up to date** — if you want. *Settings → Updates* checks GitHub for a new version, downloads it, verifies it against the release's published checksums and installs it. Automatic updates install when you quit, never in the middle of a talk.
 - **Open source throughout** — code (MIT), speech engine and model (Apache-2.0), fonts (OFL), icons (ISC). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## A closer look
@@ -57,6 +58,10 @@ Requirements: Windows 10 or 11 (64-bit) and a microphone for voice tracking.
 > **Windows SmartScreen:** the release builds are not code-signed yet, so Windows may show
 > “Windows protected your PC”. Choose **More info → Run anyway**. You can verify a download
 > against the SHA-256 checksums published with each release.
+
+**Update** from *Settings → Updates* (or *Check for updates…* in the tray menu), or turn on automatic updates there.
+Running a newer installer over an existing installation also works: it notices YALTI is already
+installed and offers to update it, to check for updates, or to uninstall.
 
 **Uninstall** from *Settings → Apps → Installed apps → YALTI Prompter*, or with the uninstaller in the Start menu. Your settings stay in `%APPDATA%\YALTI Prompter` unless you delete that folder.
 

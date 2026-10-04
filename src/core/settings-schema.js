@@ -85,6 +85,8 @@ export const FIELDS = {
   globalShortcuts: { type: 'bool', default: true },
   reopenLastScript: { type: 'bool', default: true },
   watchScriptFile: { type: 'bool', default: true },
+  // Off by default: YALTI makes no network requests unless you ask it to.
+  autoUpdate: { type: 'bool', default: false },
   shortcuts: { type: 'object', default: Object.fromEntries(SHORTCUT_ACTIONS.map((a) => [a.id, a.default])) },
 };
 

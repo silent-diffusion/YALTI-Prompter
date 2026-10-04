@@ -11,6 +11,7 @@ need it.
 - [Customizing](#customizing)
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [The tray icon](#the-tray-icon)
+- [Updates](#updates)
 - [Privacy](#privacy)
 - [Troubleshooting](#troubleshooting)
 
@@ -186,16 +187,42 @@ to it — record a different one.
 
 YALTI keeps running in the notification area so it is always ready. Click the icon to show or
 hide the prompter; right-click for the menu (open, recent scripts, paste, edit, start/pause, voice
-tracking, always on top, display, settings, quit). Closing settings or the editor never quits the
-app — use *Quit YALTI Prompter* in the tray menu.
+tracking, always on top, display, settings, check for updates, quit). Closing settings or the
+editor never quits the app — use *Quit YALTI Prompter* in the tray menu.
+
+## Updates
+
+Open *Settings → Updates* (or *Check for updates…* in the tray menu) to see whether a new version
+of YALTI is out. If one is, you can read what's new and download it:
+
+- **Installed copy** — *Download and install* fetches the new installer. It installs by itself the
+  next time you quit YALTI, or choose *Restart and install* to do it right away; YALTI comes back
+  on its own a moment later, with your settings and scripts as they were.
+- **Portable .exe** — the new version is saved next to the one you are running; *Switch to the new
+  version* starts it. Your settings move with it. Delete the old .exe when you like.
+- **Portable .zip** — the new zip is saved to your Downloads folder; unzip it in place of the old
+  folder.
+
+Every download is checked against the checksums published with the release and is discarded if it
+doesn't match.
+
+**Update automatically** (off unless you turn it on) checks when YALTI starts and once a day while
+it runs. Installed copies download the update in the background and install it when you quit —
+never in the middle of a talk. Portable copies just let you know.
+
+Running a newer *YALTI-Prompter-Setup* over an installed copy also works. The installer notices
+that YALTI is already installed and offers to install the new version over it, to open YALTI and
+check for updates instead, or to uninstall it.
 
 ## Privacy
 
 - Speech recognition runs on your computer with an open-source model. Audio is processed in memory
   and immediately discarded — it is never recorded or saved.
 - Scripts are read from your disk and never uploaded.
-- There are no accounts, no analytics, no crash reporting and no network requests while you use
-  the app. It works with your network cable unplugged.
+- There are no accounts, no analytics and no crash reporting, and it works with your network cable
+  unplugged. The only network requests YALTI ever makes are update checks and downloads from
+  GitHub — when you click *Check for updates*, or if you turn on *Update automatically*. They ask
+  for the latest release and send nothing about you or your scripts.
 - Settings, recent scripts and reading positions are stored in `%APPDATA%\YALTI Prompter`
   (or in `YALTI Prompter Data` next to the portable app).
 
